@@ -3,6 +3,9 @@ uuid = "c4d961ba-0ec2-4b0f-a161-22c1127deb0e"
 authors = ["Oleg Soloviev"]
 version = "0.1.0"
 
+[deps]
+RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
+
 [compat]
 julia = "1"
 

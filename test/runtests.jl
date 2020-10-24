@@ -1,6 +1,16 @@
+using DrWatson
+@quickactivate "PhaseBases"
 using PhaseBases
 using Test
 
 @testset "PhaseBases.jl" begin
-    # Write your tests here.
+    @test zernike(.5,.5, 3) == (z = [1.0, 0.5, 0.5, 0.5, 0.0, 0.0, 0.25, -0.25, -0.25, -0.25], zx = [0.0, 0.0, 1.0, 1.0, 2.0, 1.0, 1.5, 1.5, 1.0, 0.0], zy = [0.0, 1.0, 0.0, 1.0, 2.0, -1.0, 0.0, 1.0, 1.5, -1.5])
+    z= ZernikeBW(5,4);
+    @test z.elements[:,:,15] == 
+   [-4.0     -0.4375  1.0     -0.4375  -4.0
+    -0.4375  -0.25    0.0625  -0.25    -0.4375
+     1.0      0.0625  0.0      0.0625   1.0
+    -0.4375  -0.25    0.0625  -0.25    -0.4375
+    -4.0     -0.4375  1.0     -0.4375  -4.0]
 end
+# z = ZernikeBW(5,2)
