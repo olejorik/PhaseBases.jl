@@ -145,9 +145,11 @@ end
 function makeaperture(gridsize::Integer)
     x = range(-1, 1, length=gridsize)
     y = range(-1, 1, length=gridsize)
-    ap = [ (xc^2 + yc^2) <= 1 ? 1 : 0 for xc ∈ x, yc ∈ y]
+    δ = 0. # tuning of the aperture size
+    r =1 + δ  /gridsize 
+    ap = [ (xc^2 + yc^2) <= r^2 ? 1 : 0 for xc ∈ x, yc ∈ y]
     # area = +(ap[:]...)
-    phmask = [ (xc^2 + yc^2) <= 1 ? 1 : NaN for xc ∈ x, yc ∈ y]
+    phmask = [ (xc^2 + yc^2) <= r^2 ? 1 : NaN for xc ∈ x, yc ∈ y]
     return(ap, phmask)
 end
 

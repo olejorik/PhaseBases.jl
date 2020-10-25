@@ -1,5 +1,6 @@
 module PhaseBases
 using  RecursiveArrayTools
+using LinearAlgebra
 
 export zernike, ZernikeBW
 
