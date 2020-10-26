@@ -126,6 +126,8 @@ struct ZernikeBW <: OrthogonalBasis
     elements::VectorOfArray
     ap::Array
     mask::Array
+    norms::Vector
+    ZernikeBW(elements, ap, masks) = new(elements, ap, masks, [sqrt.(inner(f, ap .* f)) for f in elements])
 end
 
 ZernikeBW(gridsize::Integer, maxorder::Integer)  = ZernikeBW(makezerniketable(gridsize, maxorder),makeaperture(gridsize)...)
@@ -142,10 +144,10 @@ function makezerniketable(gridsize::Integer, maxorder::Integer)
 end
 
 
-function makeaperture(gridsize::Integer)
+function makeaperture(gridsize::Integer, δ = 0.)
     x = range(-1, 1, length=gridsize)
     y = range(-1, 1, length=gridsize)
-    δ = 0. # tuning of the aperture size
+    # δ = 0. # tuning of the aperture size
     r =1 + δ  /gridsize 
     ap = [ (xc^2 + yc^2) <= r^2 ? 1 : 0 for xc ∈ x, yc ∈ y]
     # area = +(ap[:]...)

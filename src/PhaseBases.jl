@@ -2,7 +2,7 @@ module PhaseBases
 using  RecursiveArrayTools
 using LinearAlgebra
 
-export zernike, ZernikeBW
+export  ZernikeBW, compose, decompose
 
 include("types.jl")
 

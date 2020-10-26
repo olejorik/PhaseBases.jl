@@ -14,9 +14,14 @@ abstract type OrthonormalBasis <: OrthogonalBasis end
 
     elements(b::Basis) gives vector of the basis functions.
 """
-elements(b::Basis) =  b.elements[:]
-
+elements(b::Basis) =  b.elements
 elements(b::Basis, ind) =  b.elements[ind]
+
+aperture(b::Basis)  = b.ap
+
+# Todo: correct below, returns array instead of VectorOfArray
+aperturedelements(b::Basis) =  (b.ap) .* b.elements
+aperturedelements(b::Basis, ind) =  (b.ap) .* b.elements[ind]
 
 norms(b::Basis) =  b.norms[:]
 
@@ -25,9 +30,13 @@ norms(b::Basis, ind::Vector) =  b.norms[ind]
 
 
 @doc raw"""
-    compose(b, ind, coef) gives linear combination  math`\sum_i \lambda_i f_i`
+    compose(b, ind, coef) gives linear combination  math`\sum_{i\in ind \lambda_i f_i`
+
+    
+    compose(b, coef) requires `coef` be the complete vector of the coefficients. 
 """
-compose(b::Basis, ind::Vector, coef::Vector) = comb(coef, elements(b,ind))
+compose(b::Basis, ind::Vector, coef::Vector) = length(ind) != length(coef) ? error("Coefficients and indexes are of different length") : comb(coef, elements(b,ind))
+compose(b::Basis,  coef::Vector) =  length(elements(b)) != length(coef) ? error("Coefficient vector does not match length of basis") : comb(coef, elements(b))
 
 @doc raw"""
 
@@ -40,11 +49,11 @@ function decompose(a::Array, b::Basis)
 end
 
 function decompose(a::Array, b::OrthonormalBasis)
-    [ a[:] ⋅ f[:] for f in elements(b) ]
+    [inner(a, aperture(b) .* f) for f in elements(b) ]
 end
 
 function decompose(a::Array, b::OrthogonalBasis)
-    [ a[:] ⋅ f[:] / n for (f,n) in zip(elements(b),norms(b)) ]
+    [ inner(a, aperture(b) .* f) / n^2 for (f,n) in zip(elements(b),norms(b)) ]
 end
 
 # Function below is for basis implemented as VectorOfArray
@@ -58,9 +67,10 @@ function comb(coef::Vector, a::VectorOfArray)
 end
 
 
+# TODO rewrite so it works as tensor inner product if applied to two multidimensional arrays (or use Tensors.jl/ TensorOperations.jl?) 
 # a proper version of comb
 # It can be realised as inner product in Mathematica
-# Calculate inner product (tensor convolution) using the last index in `a` and first index in `b`
+# Calculate inner product (tensor contraction) using the last index in `a` and first index in `b`
 # Can be also related to scalar product in Banach space. Then inner product `(c, f)` of function `f` and
 # constant `c` is equivalent to representing `c` as a constant function.
 """
