@@ -49,11 +49,11 @@ function decompose(a::Array, b::Basis)
 end
 
 function decompose(a::Array, b::OrthonormalBasis)
-    [inner(a, aperture(b) .* f) for f in elements(b) ]
+    [inner(a,  f, aperture(b) ) for f in elements(b) ]
 end
 
 function decompose(a::Array, b::OrthogonalBasis)
-    [ inner(a, aperture(b) .* f) / n^2 for (f,n) in zip(elements(b),norms(b)) ]
+    [inner(a,  f, aperture(b) ) / n^2 for (f,n) in zip(elements(b),norms(b)) ]
 end
 
 # Function below is for basis implemented as VectorOfArray
@@ -72,18 +72,33 @@ end
 # It can be realised as inner product in Mathematica
 # Calculate inner product (tensor contraction) using the last index in `a` and first index in `b`
 # Can be also related to scalar product in Banach space. Then inner product `(c, f)` of function `f` and
-# constant `c` is equivalent to representing `c` as a constant function.
+# constant `c` is defined as inner of `(f) ⋅ (c) = c f` .
 """
     inner(a, b)
 
 Calculate inner product of functions or array of functions.
 """
-inner(a::Array{T,N}, b::Array{T,N}) where {T <: Number, N} = dot(a[:], b[:])
+inner(a::Array{T,N}, b::Array{T,N}) where {T <: Number, N} = integrate(a .* b)
+inner(a::Array{T,N}, b::Array{T,N}, domain) where {T <: Number, N} = integrate(a .* b , domain)
 
 inner(a::Number, b::Number) = dot(a,b)
-inner(c::Number, a::Array) = dot(c, sum(a))
-inner(a::Array, c::Number) = dot(sum(a), c)
+# inner(c::Number, a::Array) = dot(c, sum(a))
+# inner(a::Array, c::Number) = dot(sum(a), c)
+inner(c::Number, a::Array) = conj(c) * a
+inner(a::Array, c::Number) = conj(a) * c
 
 inner(a::Union{Vector, VectorOfArray}, b::Union{Vector, VectorOfArray}) = sum(inner(va,vb) for (va,vb) in zip(a, b))
 
 innermatrix(b::Basis) = [inner(elements(b,i), b.ap .* elements(b,j)) for i in eachindex(elements(b)), j in eachindex(elements(b))]
+
+
+"""
+    integrate(a) 
+
+calculate numerical integral of a
+"""
+# rectangle rule
+integrate(a::Array{T,N}) where {T <: Number, N} = sum(a[:])
+integrate(a::Array{T,N}, domain::Array{T,N}) where {T <: Number, N} = sum(a[:] .* domain[:])
+
+# TODO simpson's rule on unit disk
