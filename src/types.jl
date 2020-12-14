@@ -4,6 +4,14 @@
 # Externally it should make no difference via the following organization.
 using RecursiveArrayTools
 
+#TODO rewrite as parametric type
+struct CartesianDomain2D
+    xrange::AbstractRange
+    yrange::AbstractRange
+end
+
+
+
 abstract type Basis end
 
 abstract type OrthogonalBasis <: Basis end

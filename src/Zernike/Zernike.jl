@@ -131,6 +131,7 @@ struct ZernikeBW <: OrthogonalBasis
 end
 
 ZernikeBW(gridsize::Integer, maxorder::Integer)  = ZernikeBW(makezerniketable(gridsize, maxorder),makeaperture(gridsize)...)
+ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)  = ZernikeBW(makezerniketable(dom, maxorder,d),aperture(dom, d)...)
 
 
 function makezerniketable(gridsize::Integer, maxorder::Integer)
@@ -139,6 +140,16 @@ function makezerniketable(gridsize::Integer, maxorder::Integer)
     totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
     ztable = [zernike(xc, yc, maxorder)[:z] for xc ∈ x,  yc ∈ y ]
     zvec = VectorOfArray([zeros(gridsize, gridsize) for i = 1:totalznum])
+    [zvec[i,:] = ztable[i] for i = eachindex(ztable) ]
+    return zvec
+end
+
+function makezerniketable(dom::CartesianDomain2D,  maxorder::Integer, scale = 1)
+    x= dom.xrange/scale
+    y = dom.yrange/scale
+    totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
+    ztable = [zernike(xc, yc, maxorder)[:z] for yc ∈ y, xc ∈ x ]
+    zvec = VectorOfArray([zeros(length(y), length(x)) for i = 1:totalznum])
     [zvec[i,:] = ztable[i] for i = eachindex(ztable) ]
     return zvec
 end
