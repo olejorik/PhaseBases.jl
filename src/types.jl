@@ -4,24 +4,27 @@
 # Externally it should make no difference via the following organization.
 using RecursiveArrayTools
 
-#TODO rewrite as parametric type
-struct CartesianDomain2D
-    xrange::AbstractRange
-    yrange::AbstractRange
-end
+import Base: length
 
 
+include("SampledDomains.jl")
 
+using .SampledDomains: CartesianDomain2D
+
+"""
+Abstract type representing any set of functions (`elements`) defined on some subset `ap` of a Cartesian domain.
+
+    `elements(b::Basis)` gives vector of the basis functions.
+    `aperture(b::Basis)` gives the  integer mask of non-zero elements of the array.
+    `length(b::Basis)` gives the total number of elements in the basis.
+"""
 abstract type Basis end
 
 abstract type OrthogonalBasis <: Basis end
 
 abstract type OrthonormalBasis <: OrthogonalBasis end
 
-"""
 
-    elements(b::Basis) gives vector of the basis functions.
-"""
 elements(b::Basis) =  b.elements
 elements(b::Basis, ind) =  b.elements[ind]
 
@@ -35,6 +38,7 @@ norms(b::Basis) =  b.norms[:]
 
 norms(b::Basis, ind::Vector) =  b.norms[ind]
 
+length(b::Basis) = length(elements(b))
 
 
 @doc raw"""

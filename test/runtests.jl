@@ -23,7 +23,18 @@ using RecursiveArrayTools
      0.0  1.0  1.0  1.0  0.0
      0.0  0.0  1.0  0.0  0.0]
 
-    
+
+     coef = zeros(length(z))
+     coef[10:11] = [-1,1]
+     ph = compose(z, coef)
+     @test ph == [
+        -2.0   -2.875  0.0   2.875   2.0
+        1.75  -0.25   0.0   0.25   -1.75
+        1.0    0.125  0.0  -0.125  -1.0
+       -1.25  -0.25   0.0   0.25    1.25
+       -2.0    0.125  0.0  -0.125   2.0
+     ]
+
 end
 
 
@@ -40,6 +51,24 @@ end
         201102  231405  261708
         211203  241506  271809   ]
 
+end
+
+@testset "aperture" begin
+dom1= PhaseBases.CartesianDomain2D(-1:.2:1, -.9:.2:.9)
+ap, mask = PhaseBases.aperture(dom1, 1);
+ap, mask = PhaseBases.aperture(dom1, 1);
+@test ap == [
+    0  0  0  0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0  0  0  0
+    0  0  0  0  0  1  0  0  0  0  0
+    0  0  0  1  1  1  1  1  0  0  0
+    0  0  0  1  1  1  1  1  0  0  0
+    0  0  0  1  1  1  1  1  0  0  0
+    0  0  0  1  1  1  1  1  0  0  0
+    0  0  0  0  0  1  0  0  0  0  0
+    0  0  0  0  0  0  0  0  0  0  0
+    0  0  0  0  0  0  0  0  0  0  0
+]
 end
 
 # The sampled basis is not orthogonal by default!

@@ -11,7 +11,7 @@ include("utils.jl")
 
 include("Zernike/Zernike.jl")
 
-test(x) = x^3 
+
 
 
 

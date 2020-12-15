@@ -121,28 +121,36 @@ function zernike(x, y, maxord::Int)
 
 end
 
+"""
+    ZernikeBW(elements, ap, mask, norms)
 
+Contains Zernike basis (in Born&Wolf norming) with the aperture, plotting mask, and element norms. Can be constructed as
+    `ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer) `
+and 
+    `ZernikeBW(gridsize::Integer, maxorder::Integer)` 
+
+"""
 struct ZernikeBW <: OrthogonalBasis
     elements::VectorOfArray
     ap::Array
     mask::Array
     norms::Vector
-    ZernikeBW(elements, ap, masks) = new(elements, ap, masks, [sqrt.(inner(f, ap .* f)) for f in elements])
+    ZernikeBW(elements, ap, mask) = new(elements, ap, mask, [sqrt.(inner(f, ap .* f)) for f in elements])
 end
 
 ZernikeBW(gridsize::Integer, maxorder::Integer)  = ZernikeBW(makezerniketable(gridsize, maxorder),makeaperture(gridsize)...)
 ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)  = ZernikeBW(makezerniketable(dom, maxorder,d),aperture(dom, d)...)
 
 
-function makezerniketable(gridsize::Integer, maxorder::Integer)
-    x = range(-1, 1, length=gridsize)
-    y = range(-1, 1, length=gridsize)
-    totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
-    ztable = [zernike(xc, yc, maxorder)[:z] for xc ∈ x,  yc ∈ y ]
-    zvec = VectorOfArray([zeros(gridsize, gridsize) for i = 1:totalznum])
-    [zvec[i,:] = ztable[i] for i = eachindex(ztable) ]
-    return zvec
-end
+# function makezerniketable(gridsize::Integer, maxorder::Integer)
+#     x = range(-1, 1, length=gridsize)
+#     y = range(-1, 1, length=gridsize)
+#     totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
+#     ztable = [zernike(xc, yc, maxorder)[:z] for xc ∈ x,  yc ∈ y ]
+#     zvec = VectorOfArray([zeros(gridsize, gridsize) for i = 1:totalznum])
+#     [zvec[i,:] = ztable[i] for i = eachindex(ztable) ]
+#     return zvec
+# end
 
 function makezerniketable(dom::CartesianDomain2D,  maxorder::Integer, scale = 1)
     x= dom.xrange/scale
@@ -153,6 +161,9 @@ function makezerniketable(dom::CartesianDomain2D,  maxorder::Integer, scale = 1)
     [zvec[i,:] = ztable[i] for i = eachindex(ztable) ]
     return zvec
 end
+
+makezerniketable(gridsize::Integer, maxorder::Integer) = 
+    makezerniketable(CartesianDomain2D(range(-1, 1, length=gridsize), range(-1, 1, length=gridsize)), maxorder)
 
 
 function makeaperture(gridsize::Integer, δ = 0.)
