@@ -7,9 +7,7 @@ using RecursiveArrayTools
 import Base: length
 
 
-include("SampledDomains.jl")
 
-using .SampledDomains: CartesianDomain2D
 
 """
 Abstract type representing any set of functions (`elements`) defined on some subset `ap` of a Cartesian domain.
