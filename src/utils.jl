@@ -8,7 +8,7 @@ Create circular aperture in array `xrange × yrange` or given by `dom`ain with d
 # Example
 ```jdoctests
 julia> dom1= PhaseBases.CartesianDomain2D(-1:.2:1, -.9:.2:.9)
-PhaseBases.SampledDomains.CartesianDomain2D(-1.0:0.2:1.0, -0.9:0.2:0.9)
+SampledDomains.CartesianDomain2D(-1.0:0.2:1.0, -0.9:0.2:0.9)
 
 julia> ap, mask = PhaseBases.aperture(dom1, 1);
 
