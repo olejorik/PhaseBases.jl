@@ -29,7 +29,7 @@ julia> ap
 function aperture(xrange::AbstractRange, yrange::AbstractRange, d, o=(0,0))
 ap = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1 : 0 for yc ∈ yrange,  xc ∈ xrange]
 # area = +(ap[:]...)
-phmask = [ (xc^2 + yc^2) <= d^2 /4 ? 1 : NaN for yc ∈ yrange,  xc ∈ xrange]
+phmask = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1 : NaN for yc ∈ yrange,  xc ∈ xrange]
 return(ap, phmask)
 end
 
