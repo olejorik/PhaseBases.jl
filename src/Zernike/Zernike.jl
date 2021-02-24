@@ -139,7 +139,7 @@ struct ZernikeBW <: OrthogonalBasis
 end
 
 ZernikeBW(gridsize::Integer, maxorder::Integer)  = ZernikeBW(makezerniketable(gridsize, maxorder),makeaperture(gridsize)...)
-ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)  = ZernikeBW(makezerniketable(dom, maxorder,d),aperture(dom, d)...)
+ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)  = ZernikeBW(makezerniketable(dom, maxorder,d/2.),aperture(dom, d)...)
 
 
 # function makezerniketable(gridsize::Integer, maxorder::Integer)
