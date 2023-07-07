@@ -7,8 +7,8 @@
 
 WIP
 
-PhaseBases.jl is a small package implementing typical bases used for decomposition of the phase of the optical field in the pupil, like Zernike polynomials and 
+PhaseBases.jl is a small package implementing typical bases used for the decomposition of the phase of the optical field in the pupil, like Zernike polynomials and 
 Gaussian radial base functions.
 
 The package is intended for the use scenario with iterative algorithms (like phase retrieval), where different combinations of the basis functions should be evaluated multiple times.
-For this purpose, the basis function are precalculated on a fixed grid and kept for future access.
+For this purpose, the basis functions are precalculated on a fixed grid and kept for future access.

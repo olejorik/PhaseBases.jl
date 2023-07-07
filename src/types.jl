@@ -55,7 +55,7 @@ compose(b::Basis,  coef::Vector) =  length(elements(b)) != length(coef) ? error(
 Calculate coefficients of `a` in basis `b`.
 """
 function decompose(a::Array, b::Basis)
-    error("There are no decomposition rules of basis $b") 
+    error("There are no decomposition rules of basis $typeof(b)") 
 end
 
 function decompose(a::Array, b::OrthonormalBasis)
