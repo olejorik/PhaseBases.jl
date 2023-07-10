@@ -177,3 +177,54 @@ function makeaperture(gridsize::Integer, δ = 0.)
     return(ap, phmask)
 end
 
+## Numbering schemes
+
+triangle(k::Int) = k * (k+1) ÷ 2
+maxtriangle(i) = floor(Int, sqrt(2i+0.25) - 0.5)
+
+
+"""
+    osa_j_to_nm(j::Int)
+
+Convert OSA/ANSI standard indexing to (n,m) pair. Return named tuple.
+
+```jldoctest
+julia> osa_j_to_nm(0)
+(n = 0, m = 0)
+
+julia> osa_j_to_nm(65)
+(n = 10, m = 10)
+
+julia> osa_j_to_nm(495)
+(n = 30, m = 30)
+```
+"""
+function osa_j_to_nm(j::Int) 
+    n = maxtriangle(j)
+    m = 2(j - triangle(n))-n
+    return (n=n, m=m)
+end
+
+"""
+    nm_to_osa_j(;n,m)
+
+Convert (n,m) index of Zernike polynomial to OSA/ANSI standard indexing.
+
+```jldoctest
+julia> nm_to_osa_j(n=4,m=0)
+12
+
+julia> nm_to_osa_j(m=4,n=4)
+14
+
+julia> nm_to_osa_j(n=30, m=30)
+495
+
+```
+"""
+function nm_to_osa_j(;n,m)
+    j = (m+n)÷2 + triangle(n)
+    return j
+end
+
+export osa_j_to_nm, nm_to_osa_j
