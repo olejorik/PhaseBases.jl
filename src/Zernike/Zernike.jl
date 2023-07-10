@@ -222,9 +222,13 @@ julia> nm_to_osa_j(n=30, m=30)
 
 ```
 """
-function nm_to_osa_j(;n,m)
+function nm_to_osa_j(;n::Int,m::Int)
     j = (m+n)÷2 + triangle(n)
     return j
 end
 
 export osa_j_to_nm, nm_to_osa_j
+
+## make basis callable for convenience
+(basis::ZernikeBW)(j::Int) = elements(basis)[j+1]
+(basis::ZernikeBW)(;n::Int,m::Int) = elements(basis)[nm_to_osa_j(;n=n, m=m)]

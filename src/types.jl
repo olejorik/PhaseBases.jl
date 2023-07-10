@@ -7,6 +7,7 @@ using RecursiveArrayTools
 import Base: length, collect
 
 export Basis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase
+export elements, aperture, aperturedelements, norms
 
 
 """
@@ -140,6 +141,11 @@ end
 
 ModalPhase(coef::Vector{Float64}, basis::T) where {T<:Basis} = ModalPhase{T}(coef::Vector{Float64}, basis::T)
 ModalPhase(basis::Basis) = ModalPhase(zeros(Float64, length(basis)), basis)
+function ModalPhase(ind::Vector{Int}, coef::Vector{Float64}, basis::T) where {T<:Basis} 
+    c = zeros(Float64, length(basis))
+    c[ind] .= coef
+    return ModalPhase{T}(c, basis)
+end
 
 collect(ph::ModalPhase) = compose(ph.basis, ph.coef)
 
