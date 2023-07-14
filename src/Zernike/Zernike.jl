@@ -230,5 +230,5 @@ end
 export osa_j_to_nm, nm_to_osa_j
 
 ## make basis callable for convenience
-(basis::ZernikeBW)(j::Int) = elements(basis)[j+1]
-(basis::ZernikeBW)(;n::Int,m::Int) = elements(basis)[nm_to_osa_j(;n=n, m=m)]
+(basis::ZernikeBW)(j::Int) = elements(basis)[j + 1]
+(basis::ZernikeBW)(; n::Int, m::Int) = (basis)(nm_to_osa_j(; n=n, m=m))
