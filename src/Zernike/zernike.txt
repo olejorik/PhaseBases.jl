@@ -1,10 +1,10 @@
-code from [1] T. B. Andersen, “Efficient and robust recurrence relations for the Zernike circle polynomials 
+code from [1] T. B. Andersen, “Efficient and robust recurrence relations for the Zernike circle polynomials
 and their derivatives in Cartesian coordinates,” Opt. Express, vol. 26, no. 15, p. 18878, Jul. 2018.
 
 
 //   Pseudo-code to calculate unit-normalized Zernike polynomials and their x,y derivatives
 //
-//     Numbering scheme: 
+//     Numbering scheme:
 //     Within a radial order, sine terms come first
 //             ...
 //           sin((n-2m)*theta)   for m = 0,..., [(n+1)/2]-1
@@ -14,7 +14,7 @@ and their derivatives in Cartesian coordinates,” Opt. Express, vol. 26, no. 15
 //           cos((n-2m)*theta)   for m = [n/2]+1,...,n
 //             ...
 //
-//     INPUT: 
+//     INPUT:
 //     x, y normalized (x,y) coordinates in unit circle
 //     MaxOrd: Maximum Zernike radial order
 //
@@ -66,32 +66,32 @@ and their derivatives in Cartesian coordinates,” Opt. Express, vol. 26, no. 15
         Zern[jndx] = x*Zern[jndx1] + y*Zern[jndx2]
         dUdx[jndx] = Zern[jndx1]*nn
         dUdy[jndx] = Zern[jndx2]*nn
-      
+
       else if (mm == nn)
         Zern[jndx] = x*Zern[jndx11] - y*Zern[jndx21]
         dUdx[jndx] = Zern[jndx11]*nn
         dUdy[jndx] = -Zern[jndx21]*nn
-      
+
       else if ((even>0) && (mm==nn2))              // logical “AND”
         Zern[jndx] = 2.*(x*Zern[jndx1]+y*Zern[jndx2]) - Zern[kndx]
         dUdx[jndx] = 2.*nn*Zern[jndx1] + dUdx[kndx]
         dUdy[jndx] = 2.*nn*Zern[jndx2] + dUdy[kndx]
         kndx++                        // increment kndx
-      
+
       else if ((even<0) && (mm==nn1))              // logical “AND”
         qval = Zern[jndx2] – Zern[jndx21]
         Zern[jndx] = x*Zern[jndx11] + y*qval - Zern[kndx]
         dUdx[jndx] = Zern[jndx11]*nn + dUdx[kndx]
         dUdy[jndx] = qval*nn + dUdy[kndx]
         kndx++                        // increment kndx
-      
+
       else if ((even<0) && (mm==nn1+1))            // logical “AND”
         pval = Zern[jndx1] + Zern[jndx11]
         Zern[jndx] = x*pval + y*Zern[jndx2] – Zern[kndx]
         dUdx[jndx] = pval*nn + dUdx[kndx]
         dUdy[jndx] = Zern[jndx2]*nn + dUdy[kndx]
         kndx++                        // increment kndx
-      
+
       else
         pval = Zern[jndx1] + Zern[jndx11]
         qval = Zern[jndx2] – Zern[jndx21]
@@ -108,4 +108,3 @@ and their derivatives in Cartesian coordinates,” Opt. Express, vol. 26, no. 15
 
       jend = jndx
       }          // End of outer radial order loop
-

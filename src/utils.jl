@@ -26,11 +26,17 @@ julia> ap
  0  0  0  0  0  0  0  0  0  0  0
 ```
 """
-function aperture(xrange::AbstractRange, yrange::AbstractRange, d, o=(0,0))
-ap = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1. : 0. for yc ∈ yrange,  xc ∈ xrange]
-# area = +(ap[:]...)
-phmask = [ ((xc-o[1])^2 + (yc-o[2])^2) <= d^2 /4 ? 1. : NaN for yc ∈ yrange,  xc ∈ xrange]
-return(ap, phmask)
+function aperture(xrange::AbstractRange, yrange::AbstractRange, d, o=(0, 0))
+    ap = [
+        ((xc - o[1])^2 + (yc - o[2])^2) <= d^2 / 4 ? 1.0 : 0.0 for yc in yrange,
+        xc in xrange
+    ]
+    # area = +(ap[:]...)
+    phmask = [
+        ((xc - o[1])^2 + (yc - o[2])^2) <= d^2 / 4 ? 1.0 : NaN for yc in yrange,
+        xc in xrange
+    ]
+    return (ap, phmask)
 end
 
-aperture(dom::CartesianDomain2D, d, o=(0,0)) = aperture(dom.xrange, dom.yrange, d,o)
+aperture(dom::CartesianDomain2D, d, o=(0, 0)) = aperture(dom.xrange, dom.yrange, d, o)
