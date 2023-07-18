@@ -147,10 +147,10 @@ an array representing the phase values.
 Coefficients can be set through `phase.coef` field.
 
 """
-struct ModalPhase{T<:Basis} <: AbstractModalPhase
-    coef::Vector{Float64}
-    basis::T
-    function ModalPhase{T}(coef::Vector{Float64}, basis::T) where {T<:Basis}
+struct ModalPhase{TC<:Real,TB<:Basis} <: AbstractModalPhase
+    coef::Vector{TC}
+    basis::TB
+    function ModalPhase{TC,TB}(coef::Vector{TC}, basis::TB) where {TC<:Real,TB<:Basis}
         return if length(coef) != length(basis)
             error("Length of coefficent vector doesn't match the basis lenghth")
         else
@@ -159,14 +159,30 @@ struct ModalPhase{T<:Basis} <: AbstractModalPhase
     end
 end
 
-function ModalPhase(coef::Vector{Float64}, basis::T) where {T<:Basis}
-    return ModalPhase{T}(coef::Vector{Float64}, basis::T)
+function ModalPhase(coef::Vector{TC}, basis::TB) where {TC<:Real,TB<:Basis}
+    return ModalPhase{TC,TB}(coef, basis)
 end
 ModalPhase(basis::Basis) = ModalPhase(zeros(Float64, length(basis)), basis)
-function ModalPhase(ind::Vector{Int}, coef::Vector{Float64}, basis::T) where {T<:Basis}
-    c = zeros(Float64, length(basis))
+function ModalPhase(
+    ind::Vector{Int}, coef::Vector{TC}, basis::TB
+) where {TC<:Real,TB<:Basis}
+    c = zeros(TC, length(basis))
     c[ind] .= coef
-    return ModalPhase{T}(c, basis)
+    return ModalPhase{TC,TB}(c, basis)
 end
 
 collect(ph::ModalPhase) = compose(ph.basis, ph.coef)
+
+import Base: -, +, *
+-(ph::ModalPhase) = ModalPhase(-ph.coef, ph.basis)
+*(c::Real, ph::ModalPhase) = ModalPhase(c * ph.coef, ph.basis)
+*(ph::ModalPhase, c::Real) = *(c::Real, ph::ModalPhase)
+function +(ph1::ModalPhase, ph2::ModalPhase)
+    return if ph1.basis === ph2.basis
+        ModalPhase(ph1.coef + ph2.coef, ph1.basis)
+    else
+        error("Cannot add modal phases in different bases")
+    end
+end
+
+-(ph1::ModalPhase, ph2::ModalPhase) = ph1 + (-ph2)
