@@ -79,7 +79,8 @@ end
 # Function below is for basis implemented as VectorOfArray
 # Do we need the same for multidimensional array?
 function comb(coef::Vector, a::VectorOfArray)
-    sum = similar(a[1]) .* 0
+    sum = similar(a[1])
+    sum .= 0
     for i in 1:length(coef)
         sum += coef[i] * a[i]
     end
