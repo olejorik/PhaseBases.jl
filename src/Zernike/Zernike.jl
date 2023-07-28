@@ -236,4 +236,6 @@ export osa_j_to_nm, nm_to_osa_j
 # (basis::ZernikeBW)(j::Int) = elements(basis)[j + 1]
 # (basis::ZernikeBW)(; n::Int, m::Int) = (basis)(nm_to_osa_j(; n=n, m=m))
 (basis::ZernikeBW)(j::Int) = ModalPhase([j + 1], [1.0], basis)
-(basis::ZernikeBW)(; n::Int, m::Int) = ModalPhase([nm_to_osa_j(; n=n, m=m)], [1.0], basis)
+function (basis::ZernikeBW)(; n::Int, m::Int)
+    return ModalPhase([nm_to_osa_j(; n=n, m=m) + 1], [1.0], basis)
+end

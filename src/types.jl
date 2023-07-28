@@ -173,7 +173,7 @@ end
 
 collect(ph::ModalPhase) = compose(ph.basis, ph.coef)
 
-import Base: -, +, *
+import Base: -, +, *, show
 -(ph::ModalPhase) = ModalPhase(-ph.coef, ph.basis)
 *(c::Real, ph::ModalPhase) = ModalPhase(c * ph.coef, ph.basis)
 *(ph::ModalPhase, c::Real) = *(c::Real, ph::ModalPhase)
@@ -186,3 +186,8 @@ function +(ph1::ModalPhase, ph2::ModalPhase)
 end
 
 -(ph1::ModalPhase, ph2::ModalPhase) = ph1 + (-ph2)
+
+# pretty printing
+function show(io::IO, x::ModalPhase{TC,TB}) where {TC,TB}
+    return println(io, "Modal phase in $TB basis with coefficients $(x.coef)")
+end
