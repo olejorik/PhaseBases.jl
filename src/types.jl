@@ -4,9 +4,10 @@
 # Externally it should make no difference via the following organization.
 using RecursiveArrayTools
 
-import Base: length, collect
+import Base: length, collect, promote_rule, convert, copy
+import Base: -, +, *, show
 
-export Basis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase
+export Basis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase
 export elements, aperture, aperturedelements, norms
 
 """
@@ -131,10 +132,26 @@ integrate(a::Array{T,N}, domain::Array{T,N}) where {T<:Number,N} = sum(a[:] .* d
 
 """
 `Phase` is an abstract type for various phase descriptions and models.
+
+The actual phase values are kept in `coef` field.
 """
 abstract type Phase end
 abstract type AbstractModalPhase <: Phase end
 abstract type AbstractZonalPhase <: Phase end
+
+struct ZonalPhase <: AbstractZonalPhase
+    coef::Array{Float64,2}
+end
+
+copy(ph::ZonalPhase) = ZonalPhase(copy(ph.coef))
+
+-(ph::Phase) = (ph1 = copy(ph); (ph1.coef .*= -1); ph1)
+*(c::Real, ph::Phase) = (ph1 = copy(ph); (ph1.coef .*= c); ph1)
+*(ph::Phase, c::Real) = *(c::Real, ph::Phase)
++(x::Phase, y::Phase) = +(promote(x, y)...)
+-(x::Phase, y::Phase) = -(promote(x, y)...)
++(x::ZonalPhase, y::ZonalPhase) = ZonalPhase(x.coef + y.coef)
+-(x::ZonalPhase, y::ZonalPhase) = ZonalPhase(x.coef - y.coef)
 
 """
     phase = ModalPhase([coefficients,] basis)
@@ -172,12 +189,13 @@ function ModalPhase(
     return ModalPhase{TC,TB}(c, basis)
 end
 
-collect(ph::ModalPhase) = compose(ph.basis, ph.coef)
+copy(ph::ModalPhase) = ModalPhase(copy(ph.coef), ph.basis)
 
-import Base: -, +, *, show
--(ph::ModalPhase) = ModalPhase(-ph.coef, ph.basis)
-*(c::Real, ph::ModalPhase) = ModalPhase(c * ph.coef, ph.basis)
-*(ph::ModalPhase, c::Real) = *(c::Real, ph::ModalPhase)
+collect(ph::ModalPhase) = compose(ph.basis, ph.coef)
+convert(::Type{ZonalPhase}, ph::ModalPhase) = ZonalPhase(collect(ph))
+ZonalPhase(ph::ModalPhase) = ZonalPhase(collect(ph))
+promote_rule(::Type{ModalPhase{T,B}}, ::Type{ZonalPhase}) where {T,B} = ZonalPhase
+
 function +(ph1::ModalPhase, ph2::ModalPhase)
     return if ph1.basis === ph2.basis
         ModalPhase(ph1.coef + ph2.coef, ph1.basis)
@@ -186,7 +204,7 @@ function +(ph1::ModalPhase, ph2::ModalPhase)
     end
 end
 
--(ph1::ModalPhase, ph2::ModalPhase) = ph1 + (-ph2)
+# -(ph1::Phase, ph2::Phase) = ph1 + (-ph2)
 
 # pretty printing
 function show(io::IO, x::ModalPhase{TC,TB}) where {TC,TB}
