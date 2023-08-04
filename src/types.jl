@@ -144,6 +144,7 @@ struct ZonalPhase <: AbstractZonalPhase
 end
 
 copy(ph::ZonalPhase) = ZonalPhase(copy(ph.coef))
+collect(ph::ZonalPhase) = ph.coef
 
 -(ph::Phase) = (ph1 = copy(ph); (ph1.coef .*= -1); ph1)
 *(c::Real, ph::Phase) = (ph1 = copy(ph); (ph1.coef .*= c); ph1)
