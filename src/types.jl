@@ -3,9 +3,11 @@
 # Internally it can be implemented differently: as one multidimensional array or as vector of arrays.
 # Externally it should make no difference via the following organization.
 using RecursiveArrayTools
+using SparseArrays
 
 import Base: length, collect, promote_rule, convert, copy
 import Base: -, +, *, show
+import LinearAlgebra: norm, dot
 
 export Basis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase
 export elements, aperture, aperturedelements, norms
@@ -14,6 +16,7 @@ export elements, aperture, aperturedelements, norms
 Abstract type representing any set of functions (`elements`) defined on some subset `ap` of a Cartesian domain.
 
     `elements(b::Basis)` gives vector of the basis functions.
+    `norms(b::Basis)` gives vector of the norms of the basis functions.
     `aperture(b::Basis)` gives the  integer mask of non-zero elements of the array.
     `length(b::Basis)` gives the total number of elements in the basis.
 """
@@ -23,6 +26,11 @@ abstract type OrthogonalBasis <: Basis end
 
 abstract type OrthonormalBasis <: OrthogonalBasis end
 
+"""
+    `elements(b::Basis [, ind])`
+
+Gives vector of the basis functions (all of them or specified by the vector of integer indexes `ind`).
+"""
 elements(b::Basis) = b.elements
 elements(b::Basis, ind) = b.elements[ind]
 
@@ -51,6 +59,7 @@ function compose(b::Basis, ind::Vector, coef::Vector)
         comb(coef, elements(b, ind))
     end
 end
+
 function compose(b::Basis, coef::Vector)
     return if length(elements(b)) != length(coef)
         error("Coefficient vector does not match length of basis")
@@ -79,7 +88,7 @@ end
 
 # Function below is for basis implemented as VectorOfArray
 # Do we need the same for multidimensional array?
-function comb(coef::Vector, a::VectorOfArray)
+function comb(coef::Vector, a::Union{VectorOfArray,AbstractVector})
     sum = similar(a[1])
     sum .= 0
     for i in 1:length(coef)
@@ -87,6 +96,7 @@ function comb(coef::Vector, a::VectorOfArray)
     end
     return sum
 end
+comb(a::Union{VectorOfArray,AbstractVector}, coef::Vector) = comb(coef, a)
 
 # TODO rewrite so it works as tensor inner product if applied to two multidimensional arrays (or use Tensors.jl/ TensorOperations.jl?)
 # a proper version of comb
@@ -99,17 +109,31 @@ end
 
 Calculate inner product of functions or array of functions.
 """
-inner(a::Array{T,N}, b::Array{T,N}) where {T<:Number,N} = integrate(a .* b)
-inner(a::Array{T,N}, b::Array{T,N}, domain) where {T<:Number,N} = integrate(a .* b, domain)
+inner(a, b) = dot(a, b)
+# The def above is the same what is below but simpler and is general
+# inner(a::Array{T,N}, b::Array{T,N}) where {T<:Number,N} = integrate(a .* b)
+# inner(a::Number, b::Number) = dot(a, b)
+# inner(c::Number, a::Array) = conj(c) * a
+# inner(a::Array, c::Number) = conj(a) * c
+inner(a, b, domain) = integrate(a .* b, domain)
 
-inner(a::Number, b::Number) = dot(a, b)
-# inner(c::Number, a::Array) = dot(c, sum(a))
-# inner(a::Array, c::Number) = dot(sum(a), c)
-inner(c::Number, a::Array) = conj(c) * a
-inner(a::Array, c::Number) = conj(a) * c
+function inner(a::AbstractSparseArray, b::AbstractSparseArray)
+    (a.colptr == b.colptr && a.rowval == b.rowval) || return dot(a, b)
+    return _inner(nonzeros(a), nonzeros(b))
+end
+
+"""
+    _inner(a::AbstractSparseArray, b::AbstractSparseArray)
+
+Calculate inner product without checking the position of nonzero elements.
+"""
+function _inner(a::AbstractSparseArray, b::AbstractSparseArray)
+    return dot(nonzeros(a), nonzeros(b))
+end
 
 function inner(a::Union{Vector,VectorOfArray}, b::Union{Vector,VectorOfArray})
-    return sum(inner(va, vb) for (va, vb) in zip(a, b))
+    # TODO rework with preallocated
+    return sum(a[i] * b[i] for i in eachindex(a))
 end
 
 function innermatrix(b::Basis)
@@ -189,6 +213,8 @@ function ModalPhase(
     c[ind] .= coef
     return ModalPhase{TC,TB}(c, basis)
 end
+
+norm(ph::ModalPhase) = sqrt(sum(ph.coef ⋅ (norms(ph.basis) .^ 2)))
 
 copy(ph::ModalPhase) = ModalPhase(copy(ph.coef), ph.basis)
 

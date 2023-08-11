@@ -7,6 +7,7 @@ version = "0.1.0"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 SampledDomains = "a82262f3-35bb-4fed-9e1b-5653a3e90076"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 ZChop = "8603256b-76ad-53fe-b511-38a38e6437cd"
 
 [compat]
