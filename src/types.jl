@@ -34,7 +34,7 @@ Gives vector of the basis functions (all of them or specified by the vector of i
 elements(b::Basis) = b.elements
 elements(b::Basis, ind) = b.elements[ind]
 
-aperture(b::Basis) = b.ap
+zaperture(b::Basis) = b.ap
 
 # Todo: correct below, returns array instead of VectorOfArray
 aperturedelements(b::Basis) = (b.ap) .* b.elements
@@ -70,19 +70,19 @@ end
 
 @doc raw"""
 
-    decompose(a::Array, b::Basis)
+    decompose(a, b::Basis)
 
 Calculate coefficients of `a` in basis `b`.
 """
-function decompose(a::Array, b::Basis)
+function decompose(a, b::Basis)
     return error("There are no decomposition rules of basis $typeof(b)")
 end
 
-function decompose(a::Array, b::OrthonormalBasis)
+function decompose(a, b::OrthonormalBasis)
     return [inner(a, f, aperture(b)) for f in elements(b)]
 end
 
-function decompose(a::Array, b::OrthogonalBasis)
+function decompose(a, b::OrthogonalBasis)
     return [inner(a, f, aperture(b)) / n^2 for (f, n) in zip(elements(b), norms(b))]
 end
 
@@ -107,15 +107,17 @@ comb(a::Union{VectorOfArray,AbstractVector}, coef::Vector) = comb(coef, a)
 """
     inner(a, b)
 
-Calculate inner product of functions or array of functions.
+Calculate inner product of sampled functions or array of functions.
 """
-inner(a, b) = dot(a, b)
+inner(a, b) = _inner(a, b)
+_inner(a, b) = dot(a, b)
 # The def above is the same what is below but simpler and is general
+# Expressed through the unsafe `_inner` function
 # inner(a::Array{T,N}, b::Array{T,N}) where {T<:Number,N} = integrate(a .* b)
 # inner(a::Number, b::Number) = dot(a, b)
 # inner(c::Number, a::Array) = conj(c) * a
 # inner(a::Array, c::Number) = conj(a) * c
-inner(a, b, domain) = integrate(a .* b, domain)
+inner(a, b, domain) = inner(a .* domain, b)
 
 function inner(a::AbstractSparseArray, b::AbstractSparseArray)
     (a.colptr == b.colptr && a.rowval == b.rowval) || return dot(a, b)
@@ -138,7 +140,7 @@ end
 
 function innermatrix(b::Basis)
     return [
-        inner(elements(b, i), b.ap .* elements(b, j)) for i in eachindex(elements(b)),
+        _inner(elements(b, i), b.ap .* elements(b, j)) for i in eachindex(elements(b)),
         j in eachindex(elements(b))
     ]
 end

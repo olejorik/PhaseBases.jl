@@ -3,7 +3,7 @@ using RecursiveArrayTools
 using LinearAlgebra
 using SampledDomains: CartesianDomain2D
 
-export ZernikeBW, compose, decompose
+export ZernikeBW, ZernikeBWSparse, compose, decompose
 export zernike
 
 include("types.jl")

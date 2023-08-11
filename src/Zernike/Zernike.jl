@@ -139,7 +139,7 @@ function ZernikeBW(gridsize::Integer, maxorder::Integer)
     return ZernikeBW(makezerniketable(gridsize, maxorder), makeaperture(gridsize)...)
 end
 function ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)
-    return ZernikeBW(makezerniketable(dom, maxorder, d / 2.0), aperture(dom, d)...)
+    return ZernikeBW(makezerniketable(dom, maxorder, d), aperture(dom, d)...)
 end
 
 # function makezerniketable(gridsize::Integer, maxorder::Integer)
@@ -238,4 +238,45 @@ export osa_j_to_nm, nm_to_osa_j
 (basis::ZernikeBW)(j::Int) = ModalPhase([j + 1], [1.0], basis)
 function (basis::ZernikeBW)(; n::Int, m::Int)
     return ModalPhase([nm_to_osa_j(; n=n, m=m) + 1], [1.0], basis)
+end
+
+# Sparse Zernike
+struct ZernikeBWSparse <: OrthogonalBasis
+    elements::VectorOfArray
+    ap::SparseMatrixCSC{Float64,Int64}
+    mask::SparseMatrixCSC{Bool,Int64}
+    norms::Vector
+end
+
+function makesparsezerniketable(dom::CartesianDomain2D, maxorder::Integer, apD=1, scale=1)
+    x = dom.xrange / scale
+    y = dom.yrange / scale
+    ap = sparse(@. x^2 + y'^2 <= apD^2 / 4)
+    is, js, vs = findnz(ap)
+    totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
+    zvec = VectorOfArray([similar(ap, Float64) for k in 1:totalznum])
+    for ind in eachindex(is)
+        zvec[is[ind], js[ind], :] .= zernike(x[is[ind]], y[js[ind]], maxorder)[:z]
+    end
+    norms = [norm(zer.nzval) for zer in zvec]
+    norms /= norms[1]
+    return zvec, ap, ap, norms
+end
+
+function makesparsezerniketable(gridsize::Integer, maxorder::Integer, apD=2)
+    return makesparsezerniketable(
+        CartesianDomain2D(range(-1, 1; length=gridsize), range(-1, 1; length=gridsize)),
+        maxorder,
+        apD,
+    )
+end
+
+function ZernikeBWSparse(gridsize::Integer, maxorder::Integer)
+    zer, ap, mask, norms = makesparsezerniketable(gridsize, maxorder)
+
+    return ZernikeBWSparse(zer, ap, mask, norms)
+end
+function ZernikeBWSparse(dom::CartesianDomain2D, d::Real, maxorder::Integer)
+    zer, ap, mask, norms = makesparsezerniketable(dom, maxorder, d)
+    return ZernikeBWSparse(zer, ap, mask, norms)
 end
