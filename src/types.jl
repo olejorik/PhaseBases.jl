@@ -34,7 +34,7 @@ Gives vector of the basis functions (all of them or specified by the vector of i
 elements(b::Basis) = b.elements
 elements(b::Basis, ind) = b.elements[ind]
 
-zaperture(b::Basis) = b.ap
+aperture(b::Basis) = b.ap
 
 # Todo: correct below, returns array instead of VectorOfArray
 aperturedelements(b::Basis) = (b.ap) .* b.elements
