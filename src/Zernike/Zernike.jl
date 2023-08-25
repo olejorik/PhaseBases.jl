@@ -120,7 +120,8 @@ end
     ZernikeBW(elements, ap, mask, norms)
 
 Contains Zernike basis (in Born&Wolf norming) with the aperture, plotting mask, and element norms. Can be constructed as
-    `ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer) `
+    `ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)`,
+    where `d` is the aperture *diameter* (not radius)
 and
     `ZernikeBW(gridsize::Integer, maxorder::Integer)`
 
@@ -139,7 +140,7 @@ function ZernikeBW(gridsize::Integer, maxorder::Integer)
     return ZernikeBW(makezerniketable(gridsize, maxorder), makeaperture(gridsize)...)
 end
 function ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)
-    return ZernikeBW(makezerniketable(dom, maxorder, d), aperture(dom, d)...)
+    return ZernikeBW(makezerniketable(dom, maxorder, d / 2), aperture(dom, d)...)
 end
 
 # function makezerniketable(gridsize::Integer, maxorder::Integer)
@@ -248,7 +249,7 @@ struct ZernikeBWSparse <: OrthogonalBasis
     norms::Vector
 end
 
-function makesparsezerniketable(dom::CartesianDomain2D, maxorder::Integer, apD=1, scale=1)
+function makesparsezerniketable(dom::CartesianDomain2D, maxorder::Integer, apD=2, scale=1)
     x = dom.xrange / scale
     y = dom.yrange / scale
     ap = sparse(@. x^2 + y'^2 <= apD^2 / 4)
