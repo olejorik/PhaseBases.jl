@@ -75,7 +75,11 @@ end
 Calculate coefficients of `a` in basis `b`.
 """
 function decompose(a, b::Basis)
-    return error("There are no decomposition rules of basis $typeof(b)")
+    if hasproperty(b, :dualelements)
+        return [inner(a, f, aperture(b)) for f in b.dualelements]
+    else
+        return error("There are no decomposition rules of basis $typeof(b)")
+    end
 end
 
 function decompose(a, b::OrthonormalBasis)
@@ -138,11 +142,38 @@ function inner(a::Union{Vector,VectorOfArray}, b::Union{Vector,VectorOfArray})
     return sum(a[i] * b[i] for i in eachindex(a))
 end
 
-function innermatrix(b::Basis)
-    return [
-        _inner(elements(b, i), b.ap .* elements(b, j)) for i in eachindex(elements(b)),
-        j in eachindex(elements(b))
-    ]
+# function innermatrix(b::Basis)
+#     return [
+#         _inner(elements(b, i), b.ap .* elements(b, j)) for i in eachindex(elements(b)),
+#         j in eachindex(elements(b))
+#     ]
+# end
+
+"""
+    innermatrix(
+    a::Union{Vector,VectorOfArray}, b::Union{Vector,VectorOfArray}, weight=1
+)
+
+@doctest
+```julia
+julia> PhaseBases.innermatrix([10, 100], [2,3,4])
+3×2 Matrix{Int64}:
+ 20  200
+ 30  300
+ 40  400
+```
+"""
+function innermatrix(
+    a::Union{Vector,VectorOfArray}, b::Union{Vector,VectorOfArray}, weight=1
+)
+    return [_inner(b[i], weight .* a[j]) for i in eachindex(b), j in eachindex(a)]
+end
+
+innermatrix(b::Basis) = innermatrix(elements(b), elements(b), aperture(b))
+
+function dualbasis(b::Basis)
+    ata = innermatrix(b)
+    return dualel = [inner(elements(b), (inv(ata))[:, i]) for i in 1:length(elements(b))]
 end
 
 """

@@ -84,13 +84,22 @@ end
     ]
 end
 
-# The sampled basis is not orthogonal by default!
-zbig = ZernikeBW(512, 10);
-m = PhaseBases.innermatrix(zbig);
-norms = sqrt.(diag(m));
-[zbig.elements[i] *= 1 / norms[i] for i in eachindex(zbig.elements)];
-m = PhaseBases.innermatrix(zbig);
-using ZChop
-m = zchop(m);
-r = m - I(length(zbig.elements));
-maximum(abs.(r))
+
+@testset "decomposition" begin
+    # The sampled basis is not orthogonal by default!
+    zbig = ZernikeBW(512, 10)
+    # m = PhaseBases.innermatrix(zbig);
+    # norms = sqrt.(diag(m));
+    # [zbig.elements[i] *= 1 / norms[i] for i in eachindex(zbig.elements)];
+    # m = PhaseBases.innermatrix(zbig);
+    # using ZChop
+    # m = zchop(m);
+    # r = m - I(length(zbig.elements));
+    # maximum(abs.(r))
+
+    length(zbig) == 66
+    coefs = rand(length(zbig))
+    aberration = compose(zbig, coefs)
+    rest_coefs = decompose(aberration, zbig)
+    @test all(rest_coefs .≈ coefs)
+end

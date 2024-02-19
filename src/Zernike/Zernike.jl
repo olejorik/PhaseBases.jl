@@ -117,7 +117,36 @@ function zernike(x, y, maxord::Int)
 end
 
 """
-    ZernikeBW(elements, ap, mask, norms)
+    _ZernikeBW_ort(elements, ap, mask, norms) assume orthogonlaity of the sampled Zernikes (bu this is wrong).
+
+Contains Zernike basis (in Born&Wolf norming) with the aperture, plotting mask, and element norms. Can be constructed as
+    `ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)`,
+    where `d` is the aperture *diameter* (not radius)
+and
+    `_ZernikeBW_ort(gridsize::Integer, maxorder::Integer)`
+
+"""
+struct _ZernikeBW_ort <: OrthogonalBasis
+    elements::VectorOfArray
+    ap::Array
+    mask::Array
+    norms::Vector
+    function _ZernikeBW_ort(elements, ap, mask)
+        return new(elements, ap, mask, [sqrt.(inner(f, ap .* f)) for f in elements])
+    end
+end
+
+function _ZernikeBW_ort(gridsize::Integer, maxorder::Integer)
+    return ZernikeBW(makezerniketable(gridsize, maxorder), makeaperture(gridsize)...)
+end
+function _ZernikeBW_ort(dom::CartesianDomain2D, d::Real, maxorder::Integer)
+    return ZernikeBW(makezerniketable(dom, maxorder, d / 2), aperture(dom, d)...)
+end
+
+# Zernike with their pseudoinverse
+
+"""
+    ZernikeBW(elements, ap, mask, norms) assume orthogonlaity of the sampled Zernikes (bu this is wrong).
 
 Contains Zernike basis (in Born&Wolf norming) with the aperture, plotting mask, and element norms. Can be constructed as
     `ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)`,
@@ -126,13 +155,25 @@ and
     `ZernikeBW(gridsize::Integer, maxorder::Integer)`
 
 """
-struct ZernikeBW <: OrthogonalBasis
+struct ZernikeBW <: Basis
     elements::VectorOfArray
+    dualelements::VectorOfArray
     ap::Array
     mask::Array
     norms::Vector
     function ZernikeBW(elements, ap, mask)
-        return new(elements, ap, mask, [sqrt.(inner(f, ap .* f)) for f in elements])
+        # ata = innermatrix(elements, elements, ap)
+        # dualelements = VectorOfArray([
+        #     inner(elements, (pinv(ata))[:, i]) for i in 1:length(elements)
+        # ])
+        elten = reshape(Array(ap .* elements), (:, length(elements)))
+        invels = pinv(elten)
+        dualelements = VectorOfArray([
+            reshape(invels[i, :], size(ap)) for i in 1:length(elements)
+        ])
+        return new(
+            elements, dualelements, ap, mask, [sqrt.(inner(f, ap .* f)) for f in elements]
+        )
     end
 end
 
@@ -229,6 +270,8 @@ function nm_to_osa_j(; n::Int, m::Int)
     j = (m + n) ÷ 2 + triangle(n)
     return j
 end
+
+nm_to_osa_j(t::NamedTuple) = nm_to_osa_j(; t...)
 
 export osa_j_to_nm, nm_to_osa_j
 
