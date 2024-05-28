@@ -117,7 +117,7 @@ function zernike(x, y, maxord::Int)
 end
 
 """
-    _ZernikeBW_ort(elements, ap, mask, norms) assume orthogonlaity of the sampled Zernikes (bu this is wrong).
+    _ZernikeBW_ort(elements, ap, mask, norms) assume orthogonlaity of the sampled Zernikes (but this is wrong).
 
 Contains Zernike basis (in Born&Wolf norming) with the aperture, plotting mask, and element norms. Can be constructed as
     `ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)`,
@@ -146,7 +146,7 @@ end
 # Zernike with their pseudoinverse
 
 """
-    ZernikeBW(elements, ap, mask, norms) assume orthogonlaity of the sampled Zernikes (bu this is wrong).
+    ZernikeBW(elements, ap, mask, norms) assume orthogonlaity of the sampled Zernikes (but this is wrong).
 
 Contains Zernike basis (in Born&Wolf norming) with the aperture, plotting mask, and element norms. Can be constructed as
     `ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer)`,
@@ -209,6 +209,31 @@ function makezerniketable(gridsize::Integer, maxorder::Integer)
         CartesianDomain2D(range(-1, 1; length=gridsize), range(-1, 1; length=gridsize)),
         maxorder,
     )
+end
+
+function makezerniketable(points::Array, maxorder::Integer)
+    totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
+    zvec = VectorOfArray([zeros(size(points)) for i in 1:totalznum])
+    for coord in eachindex(points)
+        z = zernike(points[coord]..., maxorder)[:z]
+        for i in 1:totalznum
+            zvec[coord, i] = z[i]
+        end
+    end
+    return zvec
+end
+
+function makezerniketable(xs::Array, ys::Array, maxorder::Integer)
+    size(xs) == size(ys) || error("Sizes of `x` and `y` arrays do not match")
+    totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
+    zvec = VectorOfArray([zeros(size(xs)) for i in 1:totalznum])
+    for coord in eachindex(xs)
+        z = zernike(xs[coord], ys[coord], maxorder)[:z]
+        for i in 1:totalznum
+            zvec[coord, i] = z[i]
+        end
+    end
+    return zvec
 end
 
 function makeaperture(gridsize::Integer, δ=0.0)
