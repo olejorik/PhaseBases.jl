@@ -9,7 +9,7 @@ import Base: length, collect, promote_rule, convert, copy
 import Base: -, +, *, show
 import LinearAlgebra: norm, dot
 
-export Basis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase
+export AbstractBasis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase
 export elements, aperture, aperturedelements, norms
 
 """
@@ -20,9 +20,9 @@ Abstract type representing any set of functions (`elements`) defined on some sub
     `aperture(b::Basis)` gives the  integer mask of non-zero elements of the array.
     `length(b::Basis)` gives the total number of elements in the basis.
 """
-abstract type Basis end
+abstract type AbstractBasis end
 
-abstract type OrthogonalBasis <: Basis end
+abstract type OrthogonalBasis <: AbstractBasis end
 
 abstract type OrthonormalBasis <: OrthogonalBasis end
 
@@ -31,20 +31,20 @@ abstract type OrthonormalBasis <: OrthogonalBasis end
 
 Gives vector of the basis functions (all of them or specified by the vector of integer indexes `ind`).
 """
-elements(b::Basis) = b.elements
-elements(b::Basis, ind) = b.elements[ind]
+elements(b::AbstractBasis) = b.elements
+elements(b::AbstractBasis, ind) = b.elements[ind]
 
-aperture(b::Basis) = b.ap
+aperture(b::AbstractBasis) = b.ap
 
 # Todo: correct below, returns array instead of VectorOfArray
-aperturedelements(b::Basis) = (b.ap) .* b.elements
-aperturedelements(b::Basis, ind) = (b.ap) .* b.elements[ind]
+aperturedelements(b::AbstractBasis) = (b.ap) .* b.elements
+aperturedelements(b::AbstractBasis, ind) = (b.ap) .* b.elements[ind]
 
-norms(b::Basis) = b.norms[:]
+norms(b::AbstractBasis) = b.norms[:]
 
-norms(b::Basis, ind::Vector) = b.norms[ind]
+norms(b::AbstractBasis, ind::Vector) = b.norms[ind]
 
-length(b::Basis) = length(elements(b))
+length(b::AbstractBasis) = length(elements(b))
 
 @doc raw"""
     compose(b, ind, coef) gives linear combination  math`\sum_{i\in ind \lambda_i f_i`
@@ -52,7 +52,7 @@ length(b::Basis) = length(elements(b))
 
     compose(b, coef) requires `coef` be the complete vector of the coefficients.
 """
-function compose(b::Basis, ind::Vector, coef::Vector)
+function compose(b::AbstractBasis, ind::Vector, coef::Vector)
     return if length(ind) != length(coef)
         error("Coefficients and indexes are of different length")
     else
@@ -60,7 +60,7 @@ function compose(b::Basis, ind::Vector, coef::Vector)
     end
 end
 
-function compose(b::Basis, coef::Vector)
+function compose(b::AbstractBasis, coef::Vector)
     return if length(elements(b)) != length(coef)
         error("Coefficient vector does not match length of basis")
     else
@@ -74,7 +74,7 @@ end
 
 Calculate coefficients of `a` in basis `b`.
 """
-function decompose(a, b::Basis)
+function decompose(a, b::AbstractBasis)
     if hasproperty(b, :dualelements)
         return [inner(a, f, aperture(b)) for f in b.dualelements]
     else
@@ -169,9 +169,9 @@ function innermatrix(
     return [_inner(b[i], weight .* a[j]) for i in eachindex(b), j in eachindex(a)]
 end
 
-innermatrix(b::Basis) = innermatrix(elements(b), elements(b), aperture(b))
+innermatrix(b::AbstractBasis) = innermatrix(elements(b), elements(b), aperture(b))
 
-function dualbasis(b::Basis)
+function dualbasis(b::AbstractBasis)
     ata = innermatrix(b)
     return dualel = [inner(elements(b), (inv(ata))[:, i]) for i in 1:length(elements(b))]
 end
@@ -223,10 +223,12 @@ an array representing the phase values.
 Coefficients can be set through `phase.coef` field.
 
 """
-struct ModalPhase{TC<:Real,TB<:Basis} <: AbstractModalPhase
+struct ModalPhase{TC<:Real,TB<:AbstractBasis} <: AbstractModalPhase
     coef::Vector{TC}
     basis::TB
-    function ModalPhase{TC,TB}(coef::Vector{TC}, basis::TB) where {TC<:Real,TB<:Basis}
+    function ModalPhase{TC,TB}(
+        coef::Vector{TC}, basis::TB
+    ) where {TC<:Real,TB<:AbstractBasis}
         return if length(coef) != length(basis)
             error("Length of coefficent vector doesn't match the basis lenghth")
         else
@@ -235,13 +237,13 @@ struct ModalPhase{TC<:Real,TB<:Basis} <: AbstractModalPhase
     end
 end
 
-function ModalPhase(coef::Vector{TC}, basis::TB) where {TC<:Real,TB<:Basis}
+function ModalPhase(coef::Vector{TC}, basis::TB) where {TC<:Real,TB<:AbstractBasis}
     return ModalPhase{TC,TB}(coef, basis)
 end
-ModalPhase(basis::Basis) = ModalPhase(zeros(Float64, length(basis)), basis)
+ModalPhase(basis::AbstractBasis) = ModalPhase(zeros(Float64, length(basis)), basis)
 function ModalPhase(
     ind::Vector{Int}, coef::Vector{TC}, basis::TB
-) where {TC<:Real,TB<:Basis}
+) where {TC<:Real,TB<:AbstractBasis}
     c = zeros(TC, length(basis))
     c[ind] .= coef
     return ModalPhase{TC,TB}(c, basis)

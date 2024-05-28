@@ -155,7 +155,7 @@ and
     `ZernikeBW(gridsize::Integer, maxorder::Integer)`
 
 """
-struct ZernikeBW <: Basis
+struct ZernikeBW <: AbstractBasis
     elements::VectorOfArray
     dualelements::VectorOfArray
     ap::Array
