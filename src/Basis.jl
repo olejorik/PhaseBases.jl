@@ -17,3 +17,5 @@ struct Basis <: AbstractBasis
         )
     end
 end
+
+Basis(elements::Vector, indexes) = Basis(VectorOfArray(elements), indexes)
