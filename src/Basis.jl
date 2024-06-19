@@ -7,10 +7,14 @@ struct Basis <: AbstractBasis
     ap::Array
     indexes::Array{Tuple}
     norms::Vector
-    function Basis(elements, indexes)
+    function Basis(elements, indexes; atol=0, rtol=0)
         ap = ones(size(first(elements)))
         elten = reshape(Array(elements), (:, length(elements)))
-        invels = pinv(elten)
+        if atol == 0 && rtol == 0
+            invels = pinv(elten; atol=atol)
+        else
+            invels = pinv(elten; atol=atol, rtol=rtol)
+        end
         dualelements = VectorOfArray(eachrow(invels))
         return new(
             elements, dualelements, ap, indexes, [sqrt.(inner(f, f)) for f in elements]
@@ -18,4 +22,5 @@ struct Basis <: AbstractBasis
     end
 end
 
-Basis(elements::Vector, indexes) = Basis(VectorOfArray(elements), indexes)
+Basis(elements::Vector, indexes; kwargs...) =
+    Basis(VectorOfArray(elements), indexes; kwargs...)
