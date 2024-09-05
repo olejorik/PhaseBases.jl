@@ -293,6 +293,7 @@ end
 
 triangle(k::Int) = k * (k + 1) ÷ 2
 maxtriangle(i) = floor(Int, sqrt(2i + 0.25) - 0.5)
+maxsquare(i) = floor(Int, sqrt(i))
 
 """
     osa_j_to_nm(j::Int)
@@ -340,6 +341,110 @@ end
 
 nm_to_osa_j(t::NamedTuple) = nm_to_osa_j(; t...)
 
+
+"""
+    fringe_j_to_nm(j::Int)
+
+
+Convert the Fringe indexing to (n,m) pair. Return named tuple.
+
+```jldoctest
+julia> fringe_j_to_nm(1)
+(n = 0, m = 0)
+
+julia> fringe_j_to_nm(17)
+(n = 4, m = 4)
+
+julia> fringe_j_to_nm(20)
+(n = 5, m = -3)
+```
+"""
+function fringe_j_to_nm(j)
+    q = maxsquare(j - 1)
+    k, s = divrem(j - q^2 - 1, 2)
+    n, m = q + k, q - k
+    if s == 1
+        m = -m
+    end
+    return (n=n, m=m)
+end
+
+"""
+    nm_to_fringe_j(; n::Int, m::Int)
+
+Convert double indexing to the Fringe index.
+
+```jldoctest
+julia> nm_to_fringe_j(n=5,m=3)
+19
+
+julia> all(nm_to_fringe_j.(fringe_j_to_nm.(1:20)) .== 1:20)
+true
+```
+
+
+"""
+nm_to_fringe_j(; n::Int, m::Int) = (1 + (n + abs(m)) ÷ 2)^2 - 2abs(m) + (1 - sign(m)) ÷ 2
+
+nm_to_fringe_j(t::NamedTuple) = nm_to_fringe_j(; t...)
+
+"""
+    noll_j_to_nm(j::Int)
+
+
+
+Convert Noll's standar indexing to (n,m) pair. Return named tuple.
+
+```jldoctest
+julia> noll_j_to_nm(1)
+(n = 0, m = 0)
+
+julia> noll_j_to_nm(11)
+(n = 4, m = 0)
+
+julia> noll_j_to_nm(17)
+(n = 5, m = -1)
+```
+"""
+function noll_j_to_nm(j::Int)
+    n = maxtriangle(j - 1)
+    t = triangle(n)
+    m = ((j - t + isodd(n)) ÷ 2) * 2 - isodd(n)
+    if isodd(j)
+        m = -m
+    end
+    return (n=n, m=m)
+end
+
+"""
+    nm_to_noll_j(; n::Int, m::Int)
+
+Convert double indexing to Nolls index.
+
+```jldoctest
+julia> nm_to_noll_j(n=5,m=3)
+24
+
+julia> all(nm_to_noll_j.(noll_j_to_nm.(1:20)) .== 1:20)
+true
+"""
+function nm_to_noll_j(; n::Int, m::Int)
+    if m > 0 && (mod(n, 4) < 2)
+        r = 0
+    elseif m < 0 && (mod(n, 4) >= 2)
+        r = 0
+    elseif m >= 0 && (mod(n, 4) >= 2)
+        r = 1
+    elseif m <= 0 && (mod(n, 4) < 2)
+        r = 1
+    end
+
+    return triangle(n) + abs(m) + r
+end
+
+nm_to_noll_j(t::NamedTuple) = nm_to_noll_j(; t...)
+
+
 """
     zerniketicks(len::Integer, inds=1:len)
     zerniketicks(zbas::Union{ZernikeBW,ZernikeBWSparse,_ZernikeBW_ort}, inds=1:(length(zbas)))
@@ -352,7 +457,11 @@ zerniketicks(len::Integer, inds=1:len) =
 zerniketicks(zbas::Union{ZernikeBW,ZernikeBWSparse,_ZernikeBW_ort}, inds=1:(length(zbas))) =
     zerniketicks(length(zbas), inds)
 
-export osa_j_to_nm, nm_to_osa_j, zerniketicks
+
+
+
+export osa_j_to_nm,
+    nm_to_osa_j, fringe_j_to_nm, nm_to_fringe_j, noll_j_to_nm, nm_to_noll_j, zerniketicks
 
 ## make basis callable for convenience
 # This is pixelated, the modal phase is better
