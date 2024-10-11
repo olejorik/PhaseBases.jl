@@ -240,7 +240,9 @@ end
 function ModalPhase(coef::Vector{TC}, basis::TB) where {TC<:Real,TB<:AbstractBasis}
     return ModalPhase{TC,TB}(coef, basis)
 end
+
 ModalPhase(basis::AbstractBasis) = ModalPhase(zeros(Float64, length(basis)), basis)
+
 function ModalPhase(
     ind::Vector{Int}, coef::Vector{TC}, basis::TB
 ) where {TC<:Real,TB<:AbstractBasis}
