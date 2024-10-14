@@ -251,7 +251,7 @@ function ModalPhase(
     return ModalPhase{TC,TB}(c, basis)
 end
 
-norm(ph::ModalPhase) = sqrt(sum(ph.coef ⋅ (norms(ph.basis) .^ 2)))
+norm(ph::ModalPhase) = sqrt(sum((ph.coef .* norms(ph.basis)) .^ 2))
 
 copy(ph::ModalPhase) = ModalPhase(copy(ph.coef), ph.basis)
 
