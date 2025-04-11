@@ -92,7 +92,7 @@ end
 
 # Function below is for basis implemented as VectorOfArray
 # Do we need the same for multidimensional array?
-function comb(coef::Vector, a::Union{VectorOfArray,AbstractVector})
+function comb(coef::Vector{T} where {T<:Number}, a::Union{VectorOfArray,AbstractVector})
     sum = similar(a[1])
     sum .= 0
     for i in 1:length(coef)
@@ -100,7 +100,8 @@ function comb(coef::Vector, a::Union{VectorOfArray,AbstractVector})
     end
     return sum
 end
-comb(a::Union{VectorOfArray,AbstractVector}, coef::Vector) = comb(coef, a)
+comb(a::Union{VectorOfArray,AbstractVector}, coef::Vector{T} where {T<:Number}) =
+    comb(coef, a)
 
 # TODO rewrite so it works as tensor inner product if applied to two multidimensional arrays (or use Tensors.jl/ TensorOperations.jl?)
 # a proper version of comb
