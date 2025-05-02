@@ -444,6 +444,28 @@ end
 
 nm_to_noll_j(t::NamedTuple) = nm_to_noll_j(; t...)
 
+function mizer_j_to_nm(j::Int)
+
+    n = maxtriangle(j - 1)
+    t = triangle(n)
+    m, sig = divrem(j - t + isodd(n), 2)
+    m = 2m - isodd(n)
+    if sig == 1
+        m = -m
+    end
+
+    return (n=n, m=m)
+end
+
+function nm_to_mizer_j(; n::Int, m::Int)
+    # @show triangle(n)
+    return triangle(n) + abs(m) + 1 - (m > 0)
+
+
+    # return triangle(n) + 2abs(m) - (m > 0) + iseven(n)
+end
+
+nm_to_mizer_j(t::NamedTuple) = nm_to_mizer_j(; t...)
 
 """
     zerniketicks(len::Integer, inds=1:len)
