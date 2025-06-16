@@ -160,6 +160,7 @@ struct ZernikeBW <: AbstractBasis
     dualelements::VectorOfArray
     ap::Array
     mask::Array
+    indexes::Array{Tuple}
     norms::Vector
     function ZernikeBW(elements, ap, mask)
         # ata = innermatrix(elements, elements, ap)
@@ -172,7 +173,7 @@ struct ZernikeBW <: AbstractBasis
             reshape(invels[i, :], size(ap)) for i in 1:length(elements)
         ])
         return new(
-            elements, dualelements, ap, mask, [sqrt.(inner(f, ap .* f)) for f in elements]
+            elements, dualelements, ap, mask, Tuple.(findall(Bool.(mask2ap(mask)))), [sqrt.(inner(f, ap .* f)) for f in elements]
         )
     end
 end
@@ -474,7 +475,7 @@ nm_to_mizer_j(t::NamedTuple) = nm_to_mizer_j(; t...)
 Generate tuple of `inds`, and Zernike double indexes, suitable to be used as ticks in Makie plots.
 """
 zerniketicks(len::Integer, inds=1:len) =
-    (inds, (x -> "$(values(osa_j_to_nm(x)))").((0:(len - 1))[inds]))
+    (inds, (x -> "$(values(osa_j_to_nm(x)))").((0:(len-1))[inds]))
 
 zerniketicks(zbas::Union{ZernikeBW,ZernikeBWSparse,_ZernikeBW_ort}, inds=1:(length(zbas))) =
     zerniketicks(length(zbas), inds)

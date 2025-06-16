@@ -76,7 +76,12 @@ Calculate coefficients of `a` in basis `b`.
 """
 function decompose(a, b::AbstractBasis)
     if hasproperty(b, :dualelements)
-        return [inner(a, f, aperture(b)) for f in b.dualelements]
+        if hasproperty(b, :indexes)
+            s = size(a)
+            return [inner(a, reshape(f, s), CartesianIndex.(b.indexes)) for f in b.dualelements]
+        else #assume the indexes is the full array
+            return [inner(a, f, aperture(b)) for f in b.dualelements]
+        end
     else
         return error("There are no decomposition rules of basis $typeof(b)")
     end
@@ -116,13 +121,18 @@ Calculate inner product of sampled functions or array of functions.
 """
 inner(a, b) = _inner(a, b)
 _inner(a, b) = dot(a, b)
+
 # The def above is the same what is below but simpler and is general
 # Expressed through the unsafe `_inner` function
 # inner(a::Array{T,N}, b::Array{T,N}) where {T<:Number,N} = integrate(a .* b)
 # inner(a::Number, b::Number) = dot(a, b)
 # inner(c::Number, a::Array) = conj(c) * a
 # inner(a::Array, c::Number) = conj(a) * c
-inner(a, b, domain) = inner(a .* domain, b)
+# 
+
+inner(a, b, weights) = inner(a .* weights, b)
+inner(a, b, inds::Vector{T} where T<:CartesianIndex) = inner(a[inds], b[inds])
+
 
 function inner(a::AbstractSparseArray, b::AbstractSparseArray)
     (a.colptr == b.colptr && a.rowval == b.rowval) || return dot(a, b)

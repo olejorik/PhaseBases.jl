@@ -40,3 +40,14 @@ function aperture(xrange::AbstractRange, yrange::AbstractRange, d, o=(0, 0))
 end
 
 aperture(dom::CartesianDomain2D, d, o=(0, 0)) = aperture(dom.xrange, dom.yrange, d, o)
+
+"""
+    mask2ap(mask)
+
+Converts  `mask` array where points outside the aperture are defines as `NaN` to a Float array, so that `NaN` -> 0, `not NaN` -> 1.
+"""
+function mask2ap(mask)
+    ap = zero(mask) .+ 1
+    ap[isnan.(mask)] .= 0
+    return ap
+end
