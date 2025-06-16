@@ -36,9 +36,23 @@ elements(b::AbstractBasis, ind) = b.elements[ind]
 
 aperture(b::AbstractBasis) = b.ap
 
-# Todo: correct below, returns array instead of VectorOfArray
-aperturedelements(b::AbstractBasis) = (b.ap) .* b.elements
-aperturedelements(b::AbstractBasis, ind) = (b.ap) .* b.elements[ind]
+# aperturedelements: mask each basis function by aperture
+"""
+    aperturedelements(b::AbstractBasis)
+    aperturedelements(b::AbstractBasis, ind::Integer)
+    aperturedelements(b::AbstractBasis, inds::AbstractVector{Int})
+
+Return the basis elements masked by `aperture(b)`. With no index returns a vector; with integer returns a single array; with vector returns a vector of arrays.
+"""
+function aperturedelements(b::AbstractBasis)
+    return [b.ap .* f for f in elements(b)]
+end
+function aperturedelements(b::AbstractBasis, ind::Integer)
+    return b.ap .* elements(b, ind)
+end
+function aperturedelements(b::AbstractBasis, inds::AbstractVector{Int})
+    return [b.ap .* f for f in elements(b, inds)]
+end
 
 norms(b::AbstractBasis) = b.norms[:]
 
