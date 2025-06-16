@@ -10,7 +10,8 @@ import Base: -, +, *, show
 import LinearAlgebra: norm, dot
 
 export AbstractBasis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase
-export elements, aperture, aperturedelements, norms, dualelements, indexes, decompose
+export elements, aperture, aperturedelements, norms, dualelements, indexes, decompose, mask
+
 
 """
 Abstract type representing any set of functions (`elements`) defined on some subset `ap` of a Cartesian domain.
@@ -36,22 +37,40 @@ elements(b::AbstractBasis, ind) = b.elements[ind]
 
 aperture(b::AbstractBasis) = b.ap
 
-# aperturedelements: mask each basis function by aperture
+## aperture mask interface
 """
-    aperturedelements(b::AbstractBasis)
-    aperturedelements(b::AbstractBasis, ind::Integer)
-    aperturedelements(b::AbstractBasis, inds::AbstractVector{Int})
+    mask(b::AbstractBasis)
 
-Return the basis elements masked by `aperture(b)`. With no index returns a vector; with integer returns a single array; with vector returns a vector of arrays.
+Return the plotting mask array for basis `b`.
 """
-function aperturedelements(b::AbstractBasis)
-    return [b.ap .* f for f in elements(b)]
+function mask(b::AbstractBasis)
+    if hasproperty(b, :mask)
+        return getfield(b, :mask)
+    else
+        error("Basis of type $(typeof(b)) does not have a `mask` field")
+    end
 end
-function aperturedelements(b::AbstractBasis, ind::Integer)
-    return b.ap .* elements(b, ind)
+
+# aperturedelements: mask each basis function by aperture or mask
+"""
+    aperturedelements(b::AbstractBasis; use_mask=false)
+    aperturedelements(b::AbstractBasis, ind::Integer; use_mask=false)
+    aperturedelements(b::AbstractBasis, inds::AbstractVector{Int}; use_mask=false)
+
+Return the basis elements masked by `aperture(b)` (default) or by `mask(b)` if `use_mask=true`.
+With no index returns a vector; with integer returns a single array; with vector returns a vector of arrays.
+"""
+function aperturedelements(b::AbstractBasis; use_mask=false)
+    mat = use_mask ? mask(b) : aperture(b)
+    return [mat .* f for f in elements(b)]
 end
-function aperturedelements(b::AbstractBasis, inds::AbstractVector{Int})
-    return [b.ap .* f for f in elements(b, inds)]
+function aperturedelements(b::AbstractBasis, ind::Integer; use_mask=false)
+    mat = use_mask ? mask(b) : aperture(b)
+    return mat .* elements(b, ind)
+end
+function aperturedelements(b::AbstractBasis, inds::AbstractVector{Int}; use_mask=false)
+    mat = use_mask ? mask(b) : aperture(b)
+    return [mat .* f for f in elements(b, inds)]
 end
 
 norms(b::AbstractBasis) = b.norms[:]

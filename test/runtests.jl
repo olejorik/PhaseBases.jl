@@ -144,3 +144,25 @@ end
     @test all(x -> isa(x, Tuple) && length(x) == 2, idxs)
     @test idxs == getfield(z, :indexes)
 end
+
+@testset "aperturedelements mask option" begin
+    z = ZernikeBW(5, 4)
+    ## mask interface returns struct field (uses `isequal` for NaN checks)
+    @test isequal(mask(z), getfield(z, :mask))
+
+    ## default behavior (use_mask=false) matches original aperturedelements
+    a1 = aperturedelements(z, 1)
+    a_def = aperturedelements(z, 1; use_mask=false)
+    @test isequal(a1, a_def)
+
+    ## use_mask=true uses mask(z)
+    m = mask(z)
+    e1 = elements(z, 1)
+    @test isequal(aperturedelements(z, 1; use_mask=true), m .* e1)
+
+    ## multiple indices with use_mask
+    inds = [1, 2]
+    out = aperturedelements(z, inds; use_mask=true)
+    @test length(out) == length(inds)
+    @test all(isequal(out[i], m .* elements(z, inds[i])) for i in eachindex(inds))
+end
