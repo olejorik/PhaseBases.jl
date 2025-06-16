@@ -10,7 +10,7 @@ import Base: -, +, *, show
 import LinearAlgebra: norm, dot
 
 export AbstractBasis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase
-export elements, aperture, aperturedelements, norms
+export elements, aperture, aperturedelements, norms, dualelements, indexes, decompose
 
 """
 Abstract type representing any set of functions (`elements`) defined on some subset `ap` of a Cartesian domain.
@@ -46,6 +46,37 @@ norms(b::AbstractBasis, ind::Vector) = b.norms[ind]
 
 length(b::AbstractBasis) = length(elements(b))
 
+# indexing shortcut: allow b[i] or b[inds]
+import Base: getindex
+getindex(b::AbstractBasis, i::Integer) = elements(b, i)
+getindex(b::AbstractBasis, inds::AbstractVector{Int}) = elements(b, inds)
+
+"""
+    dualelements(b::AbstractBasis)
+
+Return the dual (pseudo-inverse) elements of basis `b`.
+"""
+function dualelements(b::AbstractBasis)
+    if hasproperty(b, :dualelements)
+        return getfield(b, :dualelements)
+    else
+        error("Basis of type $(typeof(b)) does not support dualelements")
+    end
+end
+
+"""
+    indexes(b::AbstractBasis)
+
+Return the pixel indices where basis `b` is defined (only for sparse or indexed bases).
+"""
+function indexes(b::AbstractBasis)
+    if hasproperty(b, :indexes)
+        return getfield(b, :indexes)
+    else
+        error("Basis of type $(typeof(b)) does not have an `indexes` field")
+    end
+end
+
 @doc raw"""
     compose(b, ind, coef) gives linear combination  math`\sum_{i\in ind \lambda_i f_i`
 
@@ -78,7 +109,9 @@ function decompose(a, b::AbstractBasis)
     if hasproperty(b, :dualelements)
         if hasproperty(b, :indexes)
             s = size(a)
-            return [inner(a, reshape(f, s), CartesianIndex.(b.indexes)) for f in b.dualelements]
+            return [
+                inner(a, reshape(f, s), CartesianIndex.(b.indexes)) for f in b.dualelements
+            ]
         else #assume the indexes is the full array
             return [inner(a, f, aperture(b)) for f in b.dualelements]
         end
@@ -128,10 +161,10 @@ _inner(a, b) = dot(a, b)
 # inner(a::Number, b::Number) = dot(a, b)
 # inner(c::Number, a::Array) = conj(c) * a
 # inner(a::Array, c::Number) = conj(a) * c
-# 
+#
 
 inner(a, b, weights) = inner(a .* weights, b)
-inner(a, b, inds::Vector{T} where T<:CartesianIndex) = inner(a[inds], b[inds])
+inner(a, b, inds::Vector{T} where {T<:CartesianIndex}) = inner(a[inds], b[inds])
 
 
 function inner(a::AbstractSparseArray, b::AbstractSparseArray)

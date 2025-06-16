@@ -12,29 +12,27 @@ using RecursiveArrayTools
         zy=[0.0, 1.0, 0.0, 1.0, 2.0, -1.0, 0.0, 1.0, 1.5, -1.5],
     )
     z = ZernikeBW(5, 4)
-    @test z.elements[:, :, 15] == [
+    @test elements(z, 15) == [
         -4.0 -0.4375 1.0 -0.4375 -4.0
         -0.4375 -0.25 0.0625 -0.25 -0.4375
         1.0 0.0625 0.0 0.0625 1.0
         -0.4375 -0.25 0.0625 -0.25 -0.4375
         -4.0 -0.4375 1.0 -0.4375 -4.0
     ]
-    @test PhaseBases.elements(z, [5, 10])[1] == [
+    @test elements(z, 5) == [
         3.0 1.5 1.0 1.5 3.0
         1.5 0.0 -0.5 0.0 1.5
         1.0 -0.5 -1.0 -0.5 1.0
         1.5 0.0 -0.5 0.0 1.5
         3.0 1.5 1.0 1.5 3.0
     ]
-    @test PhaseBases.aperturedelements(z, 1) ==
-        PhaseBases.aperturedelements(z, [1, 2])[:, :, 1] ==
-        [
-            0.0 0.0 1.0 0.0 0.0
-            0.0 1.0 1.0 1.0 0.0
-            1.0 1.0 1.0 1.0 1.0
-            0.0 1.0 1.0 1.0 0.0
-            0.0 0.0 1.0 0.0 0.0
-        ]
+    @test aperturedelements(z, 1) == [
+        0.0 0.0 1.0 0.0 0.0
+        0.0 1.0 1.0 1.0 0.0
+        1.0 1.0 1.0 1.0 1.0
+        0.0 1.0 1.0 1.0 0.0
+        0.0 0.0 1.0 0.0 0.0
+    ]
 
     coef = zeros(length(z))
     coef[10:11] = [-1, 1]
@@ -102,4 +100,47 @@ end
     aberration = compose(zbig, coefs)
     rest_coefs = decompose(aberration, zbig)
     @test all(rest_coefs .≈ coefs)
+end
+
+@testset "Zernike composition-decomposition consistency" begin
+    ## test zero coefficients produce zero phase
+    z = ZernikeBW(10, 3)
+    coef_zero = zeros(length(z))
+    ph_zero = compose(z, coef_zero)
+    @test all(ph_zero .== 0.0)
+
+    ## test single-mode composition and decomposition
+    coef_single = zeros(length(z))
+    idx = 4
+    coef_single[idx] = 3.14
+    ph_single = compose(z, coef_single)
+    @test ph_single ≈ coef_single[idx] * elements(z, idx)
+    rec_single = decompose(ph_single, z)
+    @test rec_single ≈ coef_single
+
+    ## test random coefficients round-trip
+    coef_rand = randn(length(z))
+    ph_rand = compose(z, coef_rand)
+    rec_rand = decompose(ph_rand, z)
+    @test all(rec_rand .≈ coef_rand)
+end
+
+@testset "API convenience methods" begin
+    z = ZernikeBW(6, 3)
+
+    ## test getindex shortcuts
+    @test z[2] == elements(z, 2)
+    sub = z[1:3]
+    @test length(sub) == 3 && sub[1] == elements(z, 1)
+
+    ## test dualelements API
+    d = dualelements(z)
+    @test length(d) == length(z)
+    @test d[1] == getfield(z, :dualelements)[1]
+
+    ## test indexes API
+    idxs = indexes(z)
+    @test isa(idxs, AbstractVector)
+    @test all(x -> isa(x, Tuple) && length(x) == 2, idxs)
+    @test idxs == getfield(z, :indexes)
 end
