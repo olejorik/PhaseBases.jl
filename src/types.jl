@@ -273,18 +273,36 @@ abstract type Phase end
 abstract type AbstractModalPhase <: Phase end
 abstract type AbstractZonalPhase <: Phase end
 
-struct ZonalPhase <: AbstractZonalPhase
-    coef::Array{Float64,2}
-end
+# Interfaces
 
-copy(ph::ZonalPhase) = ZonalPhase(copy(ph.coef))
-collect(ph::ZonalPhase) = ph.coef
+coefficients(ph::Phase) = error("No `coefficients` method is defined for $(typeof(ph))")
+coefficients!(ph::Phase, coef) =
+    error("No `coefficients!` method is defined for $(typeof(ph))")
+# Add getting and setting index of the coefficient
+
+# In place scaling coefficients through indexing
+# scalecoefficients!(ph::Phase, c::Real) =
 
 -(ph::Phase) = (ph1 = copy(ph); (ph1.coef .*= -1); ph1)
 *(c::Real, ph::Phase) = (ph1 = copy(ph); (ph1.coef .*= c); ph1)
 *(ph::Phase, c::Real) = *(c::Real, ph::Phase)
 +(x::Phase, y::Phase) = +(promote(x, y)...)
 -(x::Phase, y::Phase) = -(promote(x, y)...)
+struct ZonalPhase <: AbstractZonalPhase
+    coef::Array{Float64,2}
+end
+
+coefficients(ph::ZonalPhase) = ph.coef
+function coefficients!(ph::ZonalPhase, coef)
+    ph.coef .= coef
+    return ph
+end
+
+getindex(ph::ZonalPhase, ind...) = getindex(coefficients(ph), ind...)
+
+copy(ph::ZonalPhase) = ZonalPhase(copy(ph.coef))
+collect(ph::ZonalPhase) = ph.coef
+
 +(x::ZonalPhase, y::ZonalPhase) = ZonalPhase(x.coef + y.coef)
 -(x::ZonalPhase, y::ZonalPhase) = ZonalPhase(x.coef - y.coef)
 
@@ -328,7 +346,19 @@ function ModalPhase(
     return ModalPhase{TC,TB}(c, basis)
 end
 
+coefficients(ph::ModalPhase) = ph.coef
+function coefficients!(ph::ModalPhase, coef)
+    ph.coef .= coef
+    return ph
+end
+
+getindex(ph::ModalPhase, ind...) = sum(
+    coefficients(ph)[i] * getindex(elements(ph.basis)[i], ind...) for
+    i in eachindex(elements(ph.basis))
+)
+
 norm(ph::ModalPhase) = sqrt(sum((ph.coef .* norms(ph.basis)) .^ 2))
+
 
 copy(ph::ModalPhase) = ModalPhase(copy(ph.coef), ph.basis)
 
