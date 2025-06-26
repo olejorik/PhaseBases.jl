@@ -5,7 +5,8 @@ Calculate  unit-normalized Zernike polynomials and their x,y derivatives
 
 Translation of the code from
 [1] T. B. Andersen, “Efficient and robust recurrence relations for the Zernike circle polynomials
-and their derivatives in Cartesian coordinates,” _Opt. Express_, vol. 26, no. 15, p. 18878, Jul. 2018.
+and their derivatives in Cartesian coordinates,” _Opt. Express_, vol. 26, no. 15, p. 18878, Jul. 2018. https://doi.org/10.1364/OE.26.018878
+
 
      Numbering scheme:
      Within a radial order, sine terms come first
@@ -22,6 +23,7 @@ and their derivatives in Cartesian coordinates,” _Opt. Express_, vol. 26, no. 
      MaxOrd: Maximum Zernike radial order
 
      OUTPUT:
+     zern[...]   array to receive value of each Zernike polynomium at (x,y)
      dUdx[...]   array to receive each derivative dU/dx at (x,y)
      dUdy[...]   array to receive each derivative dU/dy at (x,y)
 
@@ -32,6 +34,11 @@ function zernike(x, y, maxord::Int)
     zern = zeros(ztotnumber)
     dudx = zeros(ztotnumber)
     dudy = zeros(ztotnumber)
+    zernike!((zern, dudx, dudy), x, y, maxord)
+    return (z=zern, zx=dudx, zy=dudy)
+end
+
+function zernike!((zern, dudx, dudy), x, y, maxord::Int)
 
     zern[1] = 1
     dudx[1] = 0
@@ -113,7 +120,8 @@ function zernike(x, y, maxord::Int)
         jend = jndx
     end
 
-    return (z=zern, zx=dudx, zy=dudy)
+    # return (z=zern, zx=dudx, zy=dudy)
+    return nothing
 end
 
 """
@@ -173,7 +181,12 @@ struct ZernikeBW <: AbstractBasis
             reshape(invels[i, :], size(ap)) for i in 1:length(elements)
         ])
         return new(
-            elements, dualelements, ap, mask, Tuple.(findall(Bool.(mask2ap(mask)))), [sqrt.(inner(f, ap .* f)) for f in elements]
+            elements,
+            dualelements,
+            ap,
+            mask,
+            Tuple.(findall(Bool.(mask2ap(mask)))),
+            [sqrt.(inner(f, ap .* f)) for f in elements],
         )
     end
 end
@@ -475,7 +488,7 @@ nm_to_mizer_j(t::NamedTuple) = nm_to_mizer_j(; t...)
 Generate tuple of `inds`, and Zernike double indexes, suitable to be used as ticks in Makie plots.
 """
 zerniketicks(len::Integer, inds=1:len) =
-    (inds, (x -> "$(values(osa_j_to_nm(x)))").((0:(len-1))[inds]))
+    (inds, (x -> "$(values(osa_j_to_nm(x)))").((0:(len - 1))[inds]))
 
 zerniketicks(zbas::Union{ZernikeBW,ZernikeBWSparse,_ZernikeBW_ort}, inds=1:(length(zbas))) =
     zerniketicks(length(zbas), inds)
