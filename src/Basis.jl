@@ -8,8 +8,8 @@ struct Basis <: AbstractBasis
     indexes::Array{Tuple}
     norms::Vector
     function Basis(elements, indexes; atol=0, rtol=0)
-        ap = zeros(size(first(elements)))
-        ap[indexes] .= 1
+        ap = ones(size(first(elements)))
+        # ap[indexes] .= 1
         elten = reshape(Array(elements), (:, length(elements)))
         if atol == 0 && rtol == 0
             invels = pinv(elten; atol=atol)

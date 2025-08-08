@@ -142,9 +142,7 @@ function decompose(a, b::AbstractBasis)
     if hasproperty(b, :dualelements)
         if hasproperty(b, :indexes)
             s = size(a)
-            return [
-                inner(a, reshape(f, s), CartesianIndex.(b.indexes)) for f in b.dualelements
-            ]
+            return [inner(a[CartesianIndex.(b.indexes)], f) for f in b.dualelements]
         else #assume the indexes is the full array
             return [inner(a, f, aperture(b)) for f in b.dualelements]
         end
