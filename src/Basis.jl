@@ -5,25 +5,25 @@ struct Basis <: AbstractBasis
     elements::VectorOfArray
     dualelements::VectorOfArray
     ap::Array
-    indexes::Array{Tuple}
+    indexes::Vector{<:CartesianIndex}
     norms::Vector
     function Basis(elements, indexes; atol=0, rtol=0)
+        ## Normalize to a concretely-typed Vector{CartesianIndex{N}}
+        idx = CartesianIndex.(indexes)
         ap = zeros(size(first(elements)))
-        ap[CartesianIndex.(indexes)] .= 1
-        elten = zeros(length(indexes), length(elements))
+        ap[idx] .= 1
+        elten = zeros(length(idx), length(elements))
         for (i, e) in enumerate(elements)
-            elten[:, i] = e[CartesianIndex.(indexes)]
+            elten[:, i] = e[idx]
         end
-        # elten = reshape(Array(elements[CartesianIndex.(indexes)]), (:, length(elements)))
+        # elten = reshape(Array(elements[idx]), (:, length(elements)))
         if atol == 0 && rtol == 0
             invels = pinv(elten; atol=atol)
         else
             invels = pinv(elten; atol=atol, rtol=rtol)
         end
         dualelements = VectorOfArray(eachrow(invels))
-        return new(
-            elements, dualelements, ap, indexes, [sqrt.(inner(f, f)) for f in elements]
-        )
+        return new(elements, dualelements, ap, idx, [sqrt.(inner(f, f)) for f in elements])
     end
 end
 
@@ -76,5 +76,11 @@ decompose(a, b::ShiftedBasis) = decompose(a .- b.origin, b.basis)
 compose(b::ShiftedBasis, ind::Vector, coef::Vector) =
     compose(b.basis, ind, coef) .+ b.origin
 compose(b::ShiftedBasis, coef::Vector) = compose(b.basis, coef) .+ b.origin
+
+elements(b::ShiftedBasis) = elements(b.basis)
+origin(b::ShiftedBasis) = b.origin
+aperture(b::ShiftedBasis) = aperture(b.basis)
+mask(b::ShiftedBasis) = mask(b.basis)
+
 
 #TODO forward all other methods using https://github.com/curtd/ForwardMethods.jl

@@ -141,8 +141,7 @@ Calculate coefficients of `a` in basis `b`.
 function decompose(a, b::AbstractBasis)
     if hasproperty(b, :dualelements)
         if hasproperty(b, :indexes)
-            s = size(a)
-            return [inner(a[CartesianIndex.(b.indexes)], f) for f in b.dualelements]
+            return [inner(a, f, b.indexes) for f in b.dualelements]
         else #assume the indexes is the full array
             return [inner(a, f, aperture(b)) for f in b.dualelements]
         end
@@ -158,6 +157,10 @@ end
 function decompose(a, b::OrthogonalBasis)
     return [inner(a, f, aperture(b)) / n^2 for (f, n) in zip(elements(b), norms(b))]
 end
+
+project(a, b::AbstractBasis) = compose(b, decompose(a, b))
+
+decompose_and_complement(a, b::AbstractBasis) = (decompose(a, b), a .- project(a, b))
 
 # Function below is for basis implemented as VectorOfArray
 # Do we need the same for multidimensional array?
@@ -195,7 +198,16 @@ _inner(a, b) = dot(a, b)
 #
 
 inner(a, b, weights) = inner(a .* weights, b)
-inner(a, b, inds::Vector{T} where {T<:CartesianIndex}) = inner(a[inds], b[inds])
+## Safely gather values at Vector{CartesianIndex} without relying on A[inds]
+inner(a, b, inds::Vector{T}) where {T<:CartesianIndex} = inner(a[inds], b[inds])
+## If `a` is already a vector over the aperture points, only index `b`
+inner(a::AbstractVector, b, inds::Vector{T}) where {T<:CartesianIndex} = inner(a, b[inds])
+## If `b` is already a vector over the aperture points, only index `a`
+inner(a::AbstractArray, b::AbstractVector, inds::Vector{T}) where {T<:CartesianIndex} =
+    dot(a[inds], b)
+## Both arrays with Cartesian indices -> gather both and dot
+inner(a::AbstractArray, b::AbstractArray, inds::Vector{T}) where {T<:CartesianIndex} =
+    dot(a[inds], b[inds])
 
 
 function inner(a::AbstractSparseArray, b::AbstractSparseArray)
