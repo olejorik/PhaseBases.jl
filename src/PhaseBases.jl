@@ -2,10 +2,12 @@ module PhaseBases
 using RecursiveArrayTools
 using LinearAlgebra
 using SampledDomains: CartesianDomain2D
+using FFTW
 
 export Basis,
     ZernikeBW,
     ZernikeBWSparse,
+    PixelBasis,
     compose,
     decompose,
     project,
