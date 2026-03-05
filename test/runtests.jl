@@ -421,3 +421,169 @@ end
     @test element_count == n_pixels
     @test sum_of_sums ≈ n_pixels  # Each element sums to 1
 end
+
+# ===============================================================================
+@testset "SymbolicZernikePhase — construction" begin
+    # Dense constructor: consecutive indices from j_first(ordering)
+    ph = SymbolicZernikePhase([0.1, -0.2, 0.0, 0.5, 0.3], Fringe)
+    @test ph.indices == [1, 2, 3, 4, 5]
+    @test ph.coef    == [0.1, -0.2, 0.0, 0.5, 0.3]
+
+    # OSA ordering starts at 0
+    ph_osa = SymbolicZernikePhase([0.1, -0.2, 0.5], OSA)
+    @test ph_osa.indices == [0, 1, 2]
+
+    # Sparse constructor: arbitrary indices
+    ph_sparse = SymbolicZernikePhase([1, 4, 9], [0.0, 1.5, 0.3], Fringe)
+    @test length(ph_sparse.coef) == 3
+    @test ph_sparse.indices == [1, 4, 9]
+
+    # Normalisation is stored
+    ph_rms = SymbolicZernikePhase([4], [1.0], Noll, RMSNorm)
+    @test ph_rms.normalization isa RMSNormalization
+
+    # Guard: mismatched lengths
+    @test_throws ArgumentError SymbolicZernikePhase([1, 2], [1.0], Fringe)
+
+    # Guard: duplicate indices
+    @test_throws ArgumentError SymbolicZernikePhase([1, 1], [1.0, 2.0], Fringe)
+end
+
+@testset "SymbolicZernikePhase — index conversion to (n, m)" begin
+    # Fringe 1 → piston (0,0)
+    ph = SymbolicZernikePhase([1, 4, 9], [1.0, 1.0, 1.0], Fringe)
+    nm = to_nm(ph)
+    @test nm[1] == (n=0, m=0)   # piston
+    @test nm[2] == (n=2, m=0)   # defocus
+    @test nm[3] == (n=4, m=0)   # secondary spherical
+
+    # Noll 4 → defocus (n=2, m=0)
+    ph_noll = SymbolicZernikePhase([4], [1.0], Noll)
+    @test to_nm(ph_noll)[1] == (n=2, m=0)
+
+    # OSA 0 → piston (n=0, m=0)
+    ph_osa = SymbolicZernikePhase([0], [1.0], OSA)
+    @test to_nm(ph_osa)[1] == (n=0, m=0)
+
+    # Round-trip: j → nm → j should be identity
+    @test all(nm_to_fringe_j.(fringe_j_to_nm.(1:20)) .== 1:20)
+    @test all(nm_to_noll_j.(noll_j_to_nm.(1:20))     .== 1:20)
+    @test all(nm_to_osa_j.(osa_j_to_nm.(0:20))        .== 0:20)
+end
+
+@testset "SymbolicZernikePhase — reorder" begin
+    # Defocus: Fringe 4 == Noll 4 == OSA 12 — all the same (n=2,m=0) term
+    ph_fringe = SymbolicZernikePhase([4], [1.5], Fringe)
+    ph_noll   = reorder(ph_fringe, Noll)
+    ph_osa    = reorder(ph_fringe, OSA)
+
+    @test to_nm(ph_noll)[1] == (n=2, m=0)
+    @test ph_noll.indices   == [nm_to_noll_j(n=2, m=0)]
+    @test ph_noll.coef      == [1.5]   # coefficients unchanged
+
+    @test ph_osa.indices == [nm_to_osa_j(n=2, m=0)]
+    @test ph_osa.coef    == [1.5]
+
+    # Reordering to the same convention returns a copy
+    ph_same = reorder(ph_fringe, Fringe)
+    @test ph_same.indices == ph_fringe.indices
+    @test ph_same.coef    == ph_fringe.coef
+    @test ph_same !== ph_fringe   # it's a copy, not the same object
+
+    # Multi-term round-trip Fringe → Noll → Fringe
+    ph_multi = SymbolicZernikePhase([1, 4, 9, 16], [0.1, 1.5, 0.3, -0.2], Fringe)
+    ph_back  = reorder(reorder(ph_multi, Noll), Fringe)
+    @test sort(ph_back.indices) == sort(ph_multi.indices)
+    ## Coefficients should match after re-sorting by index
+    perm1 = sortperm(ph_multi.indices)
+    perm2 = sortperm(ph_back.indices)
+    @test ph_back.coef[perm2] ≈ ph_multi.coef[perm1]
+end
+
+@testset "SymbolicZernikePhase — arithmetic" begin
+    # Negation
+    ph  = SymbolicZernikePhase([4], [1.5], Noll)
+    neg = -ph
+    @test neg.coef == [-1.5]
+    @test neg.indices == ph.indices
+
+    # Scalar multiplication
+    ph2 = 2.0 * ph
+    @test ph2.coef == [3.0]
+    ph3 = ph * 0.5
+    @test ph3.coef == [0.75]
+
+    # copy independence
+    ph_copy = copy(ph)
+    ph_copy.coef .= 0.0
+    @test ph.coef == [1.5]
+
+    # Addition — same ordering, disjoint terms
+    a = SymbolicZernikePhase([4], [1.0], Noll)       # defocus
+    b = SymbolicZernikePhase([6], [0.5], Noll)       # primary astigmatism
+    c = a + b
+    @test sort(c.indices) == [4, 6]
+    @test c.coef[findfirst(==(4), c.indices)] ≈ 1.0
+    @test c.coef[findfirst(==(6), c.indices)] ≈ 0.5
+
+    # Addition — same term, coefficients accumulate
+    d = SymbolicZernikePhase([4], [0.3], Noll)
+    e = a + d
+    @test e.indices == [4]
+    @test e.coef    ≈ [1.3]
+
+    # Addition — different orderings (ph2 is reordered transparently)
+    # Fringe 4 and Noll 4 are both (n=2,m=0) defocus
+    f_fringe = SymbolicZernikePhase([4], [1.0], Fringe)
+    f_noll   = SymbolicZernikePhase([4], [0.5], Noll)
+    f_sum    = f_fringe + f_noll   # result in Fringe ordering
+    @test f_sum.ordering isa FringeOrdering
+    nm_sum = to_nm(f_sum)
+    @test all(nm -> nm == (n=2, m=0), nm_sum)   # both terms are defocus
+    @test sum(f_sum.coef) ≈ 1.5
+
+    # Subtraction
+    g = a - d
+    @test g.indices == [4]
+    @test g.coef    ≈ [0.7]
+
+    # Mismatched normalization is an error
+    ph_rms = SymbolicZernikePhase([4], [1.0], Noll, RMSNorm)
+    @test_throws ErrorException a + ph_rms
+end
+
+@testset "SymbolicZernikePhase — materialize on ZernikeBW basis" begin
+    z = ZernikeBW(7, 4)
+
+    # Single defocus term: Fringe 4 = OSA index 12 = basis array element 13
+    defocus_osa_idx = nm_to_osa_j(n=2, m=0) + 1   # 1-based
+
+    ph = SymbolicZernikePhase([4], [1.0], Fringe)
+    arr = collect(ph, z)
+    ref = zeros(length(z)); ref[defocus_osa_idx] = 1.0
+    expected = compose(z, ref)
+    @test arr ≈ expected
+
+    # Same via ModalPhase conversion
+    mp = ModalPhase(ph, z)
+    @test mp.coef[defocus_osa_idx] ≈ 1.0
+    @test all(iszero, mp.coef[setdiff(1:length(z), defocus_osa_idx)])
+    @test collect(mp) ≈ arr
+
+    # Different orderings must produce the same array for the same physical term
+    ph_noll = SymbolicZernikePhase([4], [1.0], Noll)   # Noll 4 = defocus too
+    @test collect(ph_noll, z) ≈ arr
+
+    # Dense Fringe phase: first 5 coefficients
+    coef5 = [0.1, -0.2, 0.0, 0.5, 0.3]
+    ph5   = SymbolicZernikePhase(coef5, Fringe)
+    # OSA positions for Fringe 1..5
+    osa_pos = [nm_to_osa_j(fringe_j_to_nm(j)) + 1 for j in 1:5]
+    ref_coef = zeros(length(z))
+    ref_coef[osa_pos] .= coef5
+    @test collect(ph5, z) ≈ compose(z, ref_coef)
+
+    # Term beyond basis length raises an error
+    ph_high = SymbolicZernikePhase([37], [1.0], Fringe)   # Fringe 37 = (n=6,m=6), needs order 6 but basis is order 4
+    @test_throws ArgumentError collect(ph_high, z)
+end

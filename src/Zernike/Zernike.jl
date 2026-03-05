@@ -493,7 +493,10 @@ zerniketicks(zbas::Union{ZernikeBW,ZernikeBWSparse,_ZernikeBW_ort}, inds=1:(leng
 
 
 export osa_j_to_nm,
-    nm_to_osa_j, fringe_j_to_nm, nm_to_fringe_j, noll_j_to_nm, nm_to_noll_j, zerniketicks
+    nm_to_osa_j, fringe_j_to_nm, nm_to_fringe_j, noll_j_to_nm, nm_to_noll_j,
+    mizer_j_to_nm, nm_to_mizer_j, zerniketicks
+
+include("symbolic_zernike.jl")
 
 ## make basis callable for convenience
 # This is pixelated, the modal phase is better
