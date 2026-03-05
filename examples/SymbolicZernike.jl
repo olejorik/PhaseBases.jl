@@ -59,7 +59,7 @@ defocus = SymbolicZernikePhase([4], [1.0], Noll)
 println(defocus)
 
 ## Coma + spherical in Fringe convention
-coma_sph = SymbolicZernikePhase([7, 8, 9], [0.3, -0.2, 0.5], Fringe)
+coma_sph = SymbolicZernikePhase([7, 8, 9], [0.5, -0.9, 0.3], Fringe)
 println(coma_sph)
 
 # ### Normalization
@@ -165,11 +165,12 @@ for (i, (arr, title)) in enumerate(zip(
     [defocus_arr, coma_arr, total_arr],
     ["Defocus (Noll 4)", "Coma + Spherical", "Combined"],
 ))
-    ax = Axis(fig[1, i]; title=title, aspect=DataAspect())
-    hm = heatmap!(ax, arr .* ap; colormap=:inferno)
-    Colorbar(fig[1, i][1, 2], hm; width=12)
+    ax = Axis(fig[1, 2i-1]; title=title, aspect=DataAspect())
+    hm = heatmap!(ax, arr .* ap; colormap=:viridis)
+    Colorbar(fig[1, 2i], hm; width=12)
     hidedecorations!(ax)
 end
+rowsize!(fig.layout, 1, Aspect(1,1))
 fig
 
 # You can also convert to a `ModalPhase` for further decomposition-based operations:
