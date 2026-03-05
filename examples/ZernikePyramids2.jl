@@ -12,7 +12,7 @@ CairoMakie.activate!(; type="png")
 # # Zernike Pyramids: BBox Layout
 #
 # This page reproduces the BW pyramid and Fringe diamond from
-# [ZernikePyramids](@ref), but uses Makie's `BBox` positioning
+# [ZernikePyramids](ZernikePyramids.md), but uses Makie's `BBox` positioning
 # to place each subplot at an *exact pixel coordinate* derived
 # analytically from the polynomial's $(n, m)$ indices.
 #

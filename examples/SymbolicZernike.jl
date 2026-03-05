@@ -18,7 +18,7 @@ CairoMakie.activate!(; type="png")
 #
 # The [`SymbolicZernikePhase`](@ref) type lets you work with Zernike coefficients
 # *without* committing to a particular computational grid. Discretization happens
-# later, when you need an actual array — via [`collect`](@ref) or conversion to
+# later, when you need an actual array — via `collect` or conversion to
 # [`ModalPhase`](@ref).
 #
 # This tutorial walks through the key features: construction, index conversion,

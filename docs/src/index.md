@@ -15,7 +15,7 @@ and modal phase representations.
 - [`ZernikeBW`](@ref) — disk-based Zernike polynomial basis (Born & Wolf normalization)
 - [`SymbolicZernikePhase`](@ref) — coefficients-only phase, independent of any computational grid
 - [`ModalPhase`](@ref) — phase as a linear combination of basis functions
-- [`ZonalPhase`](@ref) — phase as a pixel-value array
+- `ZonalPhase` — phase as a pixel-value array
 - Index conversion utilities: `fringe_j_to_nm`, `noll_j_to_nm`, `nm_to_osa_j`, …
 
 ## Quick start
