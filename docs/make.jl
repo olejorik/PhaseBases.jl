@@ -38,7 +38,8 @@ makedocs(;
 )
 
 deploydocs(;
-    repo   = "github.com/olejorik/PhaseBases.jl",
-    target = "build",
+    repo       = "github.com/olejorik/PhaseBases.jl",
+    target     = "build",
+    devbranch  = "main",
 )
 
