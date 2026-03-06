@@ -9,8 +9,18 @@ import Base: length, collect, promote_rule, convert, copy
 import Base: -, +, *, show
 import LinearAlgebra: norm, dot
 
-export AbstractBasis, OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase, PixelBasis
-export elements, aperture, aperturedelements, norms, dualelements, indexes, decompose, mask, coefficients, coefficients!
+export AbstractBasis,
+    OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase, PixelBasis
+export elements,
+    aperture,
+    aperturedelements,
+    norms,
+    dualelements,
+    indexes,
+    decompose,
+    mask,
+    coefficients,
+    coefficients!
 
 
 """
@@ -132,15 +142,17 @@ function compose(b::AbstractBasis, coef::AbstractVector)
     end
 end
 
-compose!(target, b::AbstractBasis, coef::AbstractVector) =
-    (size(target) == size(aperture(b)) ||
+compose!(target, b::AbstractBasis, coef::AbstractVector) = (
+    size(target) == size(aperture(b)) ||
         throw(ArgumentError("Target array size does not match basis aperture size"));
-    comb!(target, coef, elements(b)))
+    comb!(target, coef, elements(b))
+)
 
-compose!(target, b::AbstractBasis, ind::AbstractVector, coef::AbstractVector) =
-    (size(target) == size(aperture(b)) ||
+compose!(target, b::AbstractBasis, ind::AbstractVector, coef::AbstractVector) = (
+    size(target) == size(aperture(b)) ||
         throw(ArgumentError("Target array size does not match basis aperture size"));
-    comb!(target, coef, elements(b, ind)))
+    comb!(target, coef, elements(b, ind))
+)
 
 
 
@@ -175,8 +187,11 @@ end
 Non-allocating version of `decompose`. Write coefficients of `a` in basis `b` into pre-allocated `coeffs` vector.
 """
 function decompose!(coeffs::AbstractVector, a, b::AbstractBasis)
-    length(coeffs) == length(b) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))"))
+    length(coeffs) == length(b) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
+        ),
+    )
 
     if hasproperty(b, :dualelements)
         if hasproperty(b, :indexes)
@@ -195,8 +210,11 @@ function decompose!(coeffs::AbstractVector, a, b::AbstractBasis)
 end
 
 function decompose!(coeffs::AbstractVector, a, b::OrthonormalBasis)
-    length(coeffs) == length(b) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))"))
+    length(coeffs) == length(b) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
+        ),
+    )
 
     @inbounds for (i, f) in enumerate(elements(b))
         coeffs[i] = inner_masked(a, f, aperture(b))
@@ -205,8 +223,11 @@ function decompose!(coeffs::AbstractVector, a, b::OrthonormalBasis)
 end
 
 function decompose!(coeffs::AbstractVector, a, b::OrthogonalBasis)
-    length(coeffs) == length(b) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))"))
+    length(coeffs) == length(b) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
+        ),
+    )
 
     basis_norms = norms(b)
     @inbounds for (i, f) in enumerate(elements(b))
@@ -227,8 +248,11 @@ decompose_and_complement(a, b::AbstractBasis) = (decompose(a, b), a .- project(a
 Write results of inner product of `a` with all elements of basis `b` into pre-allocated `coeffs` vector.
 """
 function allinners!(coeffs::AbstractVector, a, b::AbstractBasis)
-    length(coeffs) == length(b) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))"))
+    length(coeffs) == length(b) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
+        ),
+    )
 
     if hasproperty(b, :elements)
         if hasproperty(b, :indexes)
@@ -247,8 +271,11 @@ function allinners!(coeffs::AbstractVector, a, b::AbstractBasis)
 end
 
 function allinners!(coeffs::AbstractVector, a, b::OrthonormalBasis)
-    length(coeffs) == length(b) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))"))
+    length(coeffs) == length(b) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
+        ),
+    )
 
     @inbounds for (i, f) in enumerate(elements(b))
         coeffs[i] = inner_masked(a, f, aperture(b))
@@ -257,11 +284,14 @@ function allinners!(coeffs::AbstractVector, a, b::OrthonormalBasis)
 end
 
 function allinners!(coeffs::AbstractVector, a, b::OrthogonalBasis)
-    length(coeffs) == length(b) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))"))
+    length(coeffs) == length(b) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
+        ),
+    )
 
     @inbounds for (i, f) in enumerate(elements(b))
-        coeffs[i] = inner_masked(a, f, aperture(b)) 
+        coeffs[i] = inner_masked(a, f, aperture(b))
     end
     return coeffs
 end
@@ -269,7 +299,11 @@ end
 
 # Function below is for basis implemented as VectorOfArray
 # Do we need the same for multidimensional array?
-function comb!(target, coef::AbstractVector{T} where {T<:Number}, a::Union{VectorOfArray,AbstractVector})
+function comb!(
+    target,
+    coef::AbstractVector{T} where {T<:Number},
+    a::Union{VectorOfArray,AbstractVector},
+)
     size(target) == size(a[1]) ||
         throw(ArgumentError("Target array size does not match basis element size"))
     target .= 0
@@ -279,7 +313,9 @@ function comb!(target, coef::AbstractVector{T} where {T<:Number}, a::Union{Vecto
     return target
 end
 
-function comb(coef::AbstractVector{T} where {T<:Number}, a::Union{VectorOfArray,AbstractVector})
+function comb(
+    coef::AbstractVector{T} where {T<:Number}, a::Union{VectorOfArray,AbstractVector}
+)
     sum = similar(a[1])
     # sum .= 0
     # for i in 1:length(coef)
@@ -292,8 +328,11 @@ end
 comb(a::Union{VectorOfArray,AbstractVector}, coef::AbstractVector{T} where {T<:Number}) =
     comb(coef, a)
 
-comb!(target, a::Union{VectorOfArray,AbstractVector}, coef::AbstractVector{T} where {T<:Number}) =
-    comb!(target, coef, a)
+comb!(
+    target,
+    a::Union{VectorOfArray,AbstractVector},
+    coef::AbstractVector{T} where {T<:Number},
+) = comb!(target, coef, a)
 
 # TODO rewrite so it works as tensor inner product if applied to two multidimensional arrays (or use Tensors.jl/ TensorOperations.jl?)
 # a proper version of comb
@@ -320,6 +359,9 @@ _inner(a, b) = dot(a, b)
 inner(a, b, weights) = inner(a .* weights, b)
 ## Safely gather values at Vector{CartesianIndex} without relying on A[inds]
 inner(a, b, inds::Vector{T}) where {T<:CartesianIndex} = inner(a[inds], b[inds])
+## If both are already vectors over the aperture points, just dot them
+inner(a::AbstractVector, b::AbstractVector, inds::Vector{T}) where {T<:CartesianIndex} =
+    dot(a, b)
 ## If `a` is already a vector over the aperture points, only index `b`
 inner(a::AbstractVector, b, inds::Vector{T}) where {T<:CartesianIndex} = inner(a, b[inds])
 ## If `b` is already a vector over the aperture points, only index `a`
@@ -340,8 +382,7 @@ Allocation-free inner product of `a` and `b` with boolean `mask`.
 Only computes dot product at locations where mask is true.
 """
 function inner_masked(a::AbstractArray, b::AbstractArray, mask::AbstractArray{Bool})
-    size(a) == size(b) == size(mask) ||
-        throw(ArgumentError("Arrays must have same size"))
+    size(a) == size(b) == size(mask) || throw(ArgumentError("Arrays must have same size"))
 
     result = zero(promote_type(eltype(a), eltype(b)))
     @inbounds for i in eachindex(a, b, mask)
@@ -355,7 +396,7 @@ end
 """
     inner_weighted(a, b, weights)
 
-Allocation-free weighted inner product. Equivalent to `inner(a .* weights, b)` 
+Allocation-free weighted inner product. Equivalent to `inner(a .* weights, b)`
 but without temporary array allocation.
 """
 function inner_weighted(a::AbstractArray, b::AbstractArray, weights::AbstractArray)
@@ -375,7 +416,9 @@ end
 Allocation-free inner product at specified indices. Equivalent to `dot(a[inds], b[inds])`
 but without creating temporary arrays.
 """
-function inner_indexed(a::AbstractArray, b::AbstractArray, inds::Vector{CartesianIndex{N}}) where {N}
+function inner_indexed(
+    a::AbstractArray, b::AbstractArray, inds::Vector{CartesianIndex{N}}
+) where {N}
     result = zero(promote_type(eltype(a), eltype(b)))
     @inbounds for idx in inds
         result += conj(a[idx]) * b[idx]
@@ -388,9 +431,14 @@ end
 
 Allocation-free inner product when `a` is already a vector over aperture points.
 """
-function inner_indexed(a::AbstractVector, b::AbstractArray, inds::Vector{CartesianIndex{N}}) where {N}
-    length(a) == length(inds) ||
-        throw(ArgumentError("Vector length $(length(a)) doesn't match index length $(length(inds))"))
+function inner_indexed(
+    a::AbstractVector, b::AbstractArray, inds::Vector{CartesianIndex{N}}
+) where {N}
+    length(a) == length(inds) || throw(
+        ArgumentError(
+            "Vector length $(length(a)) doesn't match index length $(length(inds))"
+        ),
+    )
 
     result = zero(promote_type(eltype(a), eltype(b)))
     @inbounds for (i, idx) in enumerate(inds)
@@ -404,9 +452,14 @@ end
 
 Allocation-free inner product when `b` is already a vector over aperture points.
 """
-function inner_indexed(a::AbstractArray, b::AbstractVector, inds::Vector{CartesianIndex{N}}) where {N}
-    length(b) == length(inds) ||
-        throw(ArgumentError("Vector length $(length(b)) doesn't match index length $(length(inds))"))
+function inner_indexed(
+    a::AbstractArray, b::AbstractVector, inds::Vector{CartesianIndex{N}}
+) where {N}
+    length(b) == length(inds) || throw(
+        ArgumentError(
+            "Vector length $(length(b)) doesn't match index length $(length(inds))"
+        ),
+    )
 
     result = zero(promote_type(eltype(a), eltype(b)))
     @inbounds for (i, idx) in enumerate(inds)
@@ -424,9 +477,14 @@ end
 
 Non-allocating decompose using boolean mask instead of aperture multiplication.
 """
-function decompose_masked!(coeffs::AbstractVector, a, b::OrthonormalBasis, mask::AbstractArray{Bool})
-    length(coeffs) == length(b) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))"))
+function decompose_masked!(
+    coeffs::AbstractVector, a, b::OrthonormalBasis, mask::AbstractArray{Bool}
+)
+    length(coeffs) == length(b) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
+        ),
+    )
 
     @inbounds for (i, f) in enumerate(elements(b))
         coeffs[i] = inner_masked(a, f, mask)
@@ -708,8 +766,11 @@ Efficiently compose pixel coefficients into a full array. This is the main
 advantage of PixelBasis - O(N_pixels) composition via direct indexing.
 """
 function compose(b::PixelBasis{T,N}, coef::AbstractVector) where {T,N}
-    length(coef) == length(b.indexes) ||
-        throw(ArgumentError("Coefficient length $(length(coef)) doesn't match basis length $(length(b.indexes))"))
+    length(coef) == length(b.indexes) || throw(
+        ArgumentError(
+            "Coefficient length $(length(coef)) doesn't match basis length $(length(b.indexes))",
+        ),
+    )
 
     result = zeros(eltype(coef), b.size)
     result[b.indexes] .= coef
@@ -717,10 +778,16 @@ function compose(b::PixelBasis{T,N}, coef::AbstractVector) where {T,N}
 end
 
 function compose!(target, b::PixelBasis{T,N}, coef::AbstractVector) where {T,N}
-    size(target) == b.size ||
-        throw(ArgumentError("Target array size $(size(target)) doesn't match basis size $(b.size)"))
-    length(coef) == length(b.indexes) ||
-        throw(ArgumentError("Coefficient length $(length(coef)) doesn't match basis length $(length(b.indexes))"))
+    size(target) == b.size || throw(
+        ArgumentError(
+            "Target array size $(size(target)) doesn't match basis size $(b.size)"
+        ),
+    )
+    length(coef) == length(b.indexes) || throw(
+        ArgumentError(
+            "Coefficient length $(length(coef)) doesn't match basis length $(length(b.indexes))",
+        ),
+    )
 
     target .= 0
     target[b.indexes] .= coef
@@ -743,14 +810,19 @@ end
 """
     decompose!(coeffs, array::Array{T,N}, b::PixelBasis{T,N}) where {T,N}
 
-Non-allocating version of PixelBasis decompose. Write pixel coefficients from `array` 
+Non-allocating version of PixelBasis decompose. Write pixel coefficients from `array`
 into pre-allocated `coeffs` vector. O(N_pixels) operation via direct indexing.
 """
-function decompose!(coeffs::AbstractVector, array::Array{S,N}, b::PixelBasis{T,N}) where {S,T,N}
+function decompose!(
+    coeffs::AbstractVector, array::Array{S,N}, b::PixelBasis{T,N}
+) where {S,T,N}
     size(array) == b.size ||
         throw(ArgumentError("Array size $(size(array)) doesn't match basis size $(b.size)"))
-    length(coeffs) == length(b.indexes) ||
-        throw(ArgumentError("Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b.indexes))"))
+    length(coeffs) == length(b.indexes) || throw(
+        ArgumentError(
+            "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b.indexes))",
+        ),
+    )
 
     @inbounds for (i, idx) in enumerate(b.indexes)
         coeffs[i] = array[idx]
@@ -758,7 +830,8 @@ function decompose!(coeffs::AbstractVector, array::Array{S,N}, b::PixelBasis{T,N
     return coeffs
 end
 
-allinners!(coeffs::AbstractVector, array::Array{S,N}, b::PixelBasis{T,N}) where {S,T,N} = decompose!(coeffs, array, b)
+allinners!(coeffs::AbstractVector, array::Array{S,N}, b::PixelBasis{T,N}) where {S,T,N} =
+    decompose!(coeffs, array, b)
 
 # Required AbstractBasis interface methods
 aperture(b::PixelBasis) = b.ap

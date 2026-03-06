@@ -14,36 +14,32 @@ for f in readdir(tutorials_src; join=true)
 end
 
 makedocs(;
-    sitename = "PhaseBases.jl",
-    modules  = [PhaseBases],
-    authors  = "Oleg Soloviev",
-    repo     = "https://github.com/olejorik/PhaseBases.jl/blob/{commit}{path}#L{line}",
-    checkdocs = :exports,
-    format   = Documenter.HTML(;
-        prettyurls = get(ENV, "CI", "false") == "true",
-        canonical  = "https://olejorik.github.io/PhaseBases.jl/stable/",
-        assets     = String[],
+    sitename="PhaseBases.jl",
+    modules=[PhaseBases],
+    authors="Oleg Soloviev",
+    repo="https://github.com/olejorik/PhaseBases.jl/blob/{commit}{path}#L{line}",
+    checkdocs=:exports,
+    format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", "false") == "true",
+        canonical="https://olejorik.github.io/PhaseBases.jl/stable/",
+        assets=String[],
     ),
-    clean = false,
-    pages = [
-        "Home"  => "index.md",
+    clean=false,
+    pages=[
+        "Home" => "index.md",
         "About" => "about.md",
         "Examples" => [
-            "Getting Started"              => "examples/GettingStarted.md",
-            "Zernike Bases"                => "examples/ZernikeBasis.md",
-            "Modal and Zonal Phases"       => "examples/ModalAndZonalPhase.md",
+            "Getting Started" => "examples/GettingStarted.md",
+            "Zernike Bases" => "examples/ZernikeBasis.md",
+            "Modal and Zonal Phases" => "examples/ModalAndZonalPhase.md",
             "Pixel Basis and Generic Basis" => "examples/PixelAndBasis.md",
             "Symbolic Zernike Polynomials" => "examples/SymbolicZernike.md",
-            "Zernike Pyramids (grid layout)"  => "examples/ZernikePyramids.md",
-            "Zernike Pyramids (BBox layout)"  => "examples/ZernikePyramids2.md",
+            "Zernike Pyramids (grid layout)" => "examples/ZernikePyramids.md",
+            "Zernike Pyramids (BBox layout)" => "examples/ZernikePyramids2.md",
+            "Zernike in Elliptical Aperture" => "examples/ZernikeInEllipticalAperture.md",
         ],
         "Reference" => ["API" => "api.md"],
     ],
 )
 
-deploydocs(;
-    repo       = "github.com/olejorik/PhaseBases.jl",
-    target     = "build",
-    devbranch  = "main",
-)
-
+deploydocs(; repo="github.com/olejorik/PhaseBases.jl", target="build", devbranch="main")
