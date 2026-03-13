@@ -18,7 +18,8 @@ CairoMakie.activate!(; type="png")
 # However, the **Fringe** (University of Arizona) convention re-orders the
 # polynomials so that terms with the same optical path difference are grouped
 # together. When arranged by their $(n, m)$ pairs, the Fringe ordering traces
-# a **diamond**-shaped pattern rather than a triangle.
+# a **diamond**-shaped pa
+# ttern rather than a triangle.
 #
 # This page renders both layouts side by side.
 
@@ -37,9 +38,16 @@ Place a `heatmap` of the Zernike polynomial at 1-based array position
 `osa_idx` (= OSA index + 1) into `fig[row, col]`.
 """
 function plot_zernike!(fig, row, col, osa_idx; label="", kw...)
-    ax = Axis(fig[row, col]; aspect=DataAspect(), title=label,
-        titlesize=10, titlefont=:regular)
-    heatmap!(ax, elements(zbas, osa_idx) .* ap; colormap=:RdBu, kw...)
+    ax = Axis(
+        fig[row, col]; aspect=DataAspect(), title=label, titlesize=10, titlefont=:regular
+    )
+    heatmap!(
+        ax,
+        elements(zbas, osa_idx) .* ap;
+        colormap=reverse(cgrad(:RdBu)),
+        colorrange=(-1, 1),
+        kw...,
+    )
     hidedecorations!(ax)
     hidespines!(ax)
     return ax
@@ -62,28 +70,26 @@ end
 maxn = 6   ## show orders 0 through 6
 
 fig_bw = Figure(; size=(900, 900))
-Label(fig_bw[0, :], "Born & Wolf / OSA Pyramid  (n = 0 … $maxn)";
-    fontsize=18, font=:bold)
+Label(fig_bw[0, :], "Born & Wolf / OSA Pyramid  (n = 0 … $maxn)"; fontsize=18, font=:bold)
 
 for n in 0:maxn
     for m in (-n):2:n
-        osa_j = nm_to_osa_j(n=n, m=m)
+        osa_j = nm_to_osa_j(; n=n, m=m)
         arr_idx = osa_j + 1   ## 1-based position in ZernikeBW
         ## Column: map m ∈ [-maxn, maxn] to grid columns 1..(2maxn+1)
         gcol = m + maxn + 1
         ## Row: n+1 (offset by 1 for the title row)
         grow = n + 2
-        plot_zernike!(fig_bw, grow, gcol, arr_idx;
-            label="($n,$m)")
+        plot_zernike!(fig_bw, grow, gcol, arr_idx; label="($n,$m)")
     end
 end
 
 ## Force equal cell sizes so isolated extremal columns (e.g. (6,-6)) are not oversized
 cell_px = 65
-for i in 1:(2maxn+1)
+for i in 1:(2maxn + 1)
     colsize!(fig_bw.layout, i, Fixed(cell_px))
 end
-for i in 2:(maxn+2)
+for i in 2:(maxn + 2)
     rowsize!(fig_bw.layout, i, Fixed(cell_px))
 end
 resize_to_layout!(fig_bw)
@@ -114,29 +120,27 @@ max_n_fringe = maximum(nm.n for nm in fringe_nm)
 max_m_fringe = maximum(abs(nm.m) for nm in fringe_nm)
 
 fig_fr = Figure(; size=(900, 1000))
-Label(fig_fr[0, :], "Fringe Diamond  (first $n_fringe terms)";
-    fontsize=18, font=:bold)
+Label(fig_fr[0, :], "Fringe Diamond  (first $n_fringe terms)"; fontsize=18, font=:bold)
 
 for j in 1:n_fringe
     nm = fringe_nm[j]
     n, m = nm.n, nm.m
-    osa_j = nm_to_osa_j(n=n, m=m)
+    osa_j = nm_to_osa_j(; n=n, m=m)
     arr_idx = osa_j + 1
     ## Need a larger basis if max order exceeds what we built
     arr_idx > length(zbas) && continue
     ## Grid position: row = n, col = m (centered)
     grow = n + 2
     gcol = m + max_m_fringe + 1
-    plot_zernike!(fig_fr, grow, gcol, arr_idx;
-        label="F$j ($n,$m)")
+    plot_zernike!(fig_fr, grow, gcol, arr_idx; label="F$j ($n,$m)")
 end
 
 ## Force equal cell sizes so isolated extremal columns (e.g. (5,-5)) are not oversized
 cell_px_fr = 65
-for i in 1:(2max_m_fringe+1)
+for i in 1:(2max_m_fringe + 1)
     colsize!(fig_fr.layout, i, Fixed(cell_px_fr))
 end
-for i in 2:(max_n_fringe+2)
+for i in 2:(max_n_fringe + 2)
     rowsize!(fig_fr.layout, i, Fixed(cell_px_fr))
 end
 
@@ -157,20 +161,30 @@ fig_fr
 # As a compact reference, the following table shows how the first 28
 # polynomials are numbered in each convention:
 
-println(rpad("(n, m)", 10), " | ",
-    rpad("OSA", 5), " | ",
-    rpad("Noll", 5), " | ",
-    rpad("Fringe", 6))
+println(
+    rpad("(n, m)", 10),
+    " | ",
+    rpad("OSA", 5),
+    " | ",
+    rpad("Noll", 5),
+    " | ",
+    rpad("Fringe", 6),
+)
 println("-"^35)
 for n in 0:6
     for m in (-n):2:n
-        osa  = nm_to_osa_j(n=n, m=m)
-        noll = nm_to_noll_j(n=n, m=m)
-        fr   = nm_to_fringe_j(n=n, m=m)
-        println(rpad("($n, $m)", 10), " | ",
-            rpad(osa, 5), " | ",
-            rpad(noll, 5), " | ",
-            rpad(fr, 6))
+        osa = nm_to_osa_j(; n=n, m=m)
+        noll = nm_to_noll_j(; n=n, m=m)
+        fr = nm_to_fringe_j(; n=n, m=m)
+        println(
+            rpad("($n, $m)", 10),
+            " | ",
+            rpad(osa, 5),
+            " | ",
+            rpad(noll, 5),
+            " | ",
+            rpad(fr, 6),
+        )
     end
 end
 

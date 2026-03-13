@@ -190,7 +190,10 @@ function ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer; fftshifte
     if !fftshifted
         return ZernikeBW(makezerniketable(dom, maxorder, d / 2), aperture(dom, d)...)
     else
-        return ZernikeBW(VectorOfArray([ifftshift(e) for e in makezerniketable(dom, maxorder, d / 2)]), ifftshift.(aperture(dom, d))...)
+        return ZernikeBW(
+            VectorOfArray([ifftshift(e) for e in makezerniketable(dom, maxorder, d / 2)]),
+            ifftshift.(aperture(dom, d))...,
+        )
     end
 end
 
@@ -208,7 +211,7 @@ function makezerniketable(dom::CartesianDomain2D, maxorder::Integer, scale=1)
     x = dom.xrange / scale
     y = dom.yrange / scale
     totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
-    ztable = [zernike(xc, yc, maxorder)[:z] for yc in y, xc in x]
+    ztable = [zernike(xc, yc, maxorder)[:z] for xc in x, yc in y]
     zvec = VectorOfArray([zeros(length(y), length(x)) for i in 1:totalznum])
     [zvec[i, :] = ztable[i] for i in eachindex(ztable)]
     return zvec
@@ -484,7 +487,7 @@ nm_to_mizer_j(t::NamedTuple) = nm_to_mizer_j(; t...)
 Generate tuple of `inds`, and Zernike double indexes, suitable to be used as ticks in Makie plots.
 """
 zerniketicks(len::Integer, inds=1:len) =
-    (inds, (x -> "$(values(osa_j_to_nm(x)))").((0:(len-1))[inds]))
+    (inds, (x -> "$(values(osa_j_to_nm(x)))").((0:(len - 1))[inds]))
 
 zerniketicks(zbas::Union{ZernikeBW,ZernikeBWSparse,_ZernikeBW_ort}, inds=1:(length(zbas))) =
     zerniketicks(length(zbas), inds)
@@ -493,8 +496,14 @@ zerniketicks(zbas::Union{ZernikeBW,ZernikeBWSparse,_ZernikeBW_ort}, inds=1:(leng
 
 
 export osa_j_to_nm,
-    nm_to_osa_j, fringe_j_to_nm, nm_to_fringe_j, noll_j_to_nm, nm_to_noll_j,
-    mizer_j_to_nm, nm_to_mizer_j, zerniketicks
+    nm_to_osa_j,
+    fringe_j_to_nm,
+    nm_to_fringe_j,
+    noll_j_to_nm,
+    nm_to_noll_j,
+    mizer_j_to_nm,
+    nm_to_mizer_j,
+    zerniketicks
 
 include("symbolic_zernike.jl")
 
