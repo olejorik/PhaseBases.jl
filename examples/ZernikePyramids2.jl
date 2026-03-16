@@ -97,12 +97,12 @@ for n in 0:maxn
         place_zernike!(fig_bw, cx, cy, arr_idx; label="($n,$m)")
     end
 end
-## Add colorbar using absolute coordinates (relative positioning doesn't work with BBox)
+
+
 Colorbar(
     fig_bw[2, :];
     colormap=reverse(cgrad(:RdBu)),
     limits=(-1, 1),
-    # position = (bw_width / 2, PAD_B / 2),  ## centered in bottom padding
     width=bw_width * 0.5,
     height=PAD_B * 0.5,
     label="Zernike Value",
