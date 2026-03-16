@@ -9,6 +9,7 @@ using RecursiveArrayTools
         zx=[0.0, 0.0, 1.0, 1.0, 2.0, 1.0, 1.5, 1.5, 1.0, 0.0],
         zy=[0.0, 1.0, 0.0, 1.0, 2.0, -1.0, 0.0, 1.0, 1.5, -1.5],
     )
+
     z = ZernikeBW(5, 4)
     @test elements(z, 15) == [
         -4.0 -0.4375 1.0 -0.4375 -4.0
@@ -54,12 +55,12 @@ end
     b = VectorOfArray([a[:, :, i] for i in 1:last(size(a))])
     coef = [1, 100, 10000]
     @test PhaseBases.inner(b, coef) ==
-          PhaseBases.inner(coef, b) ==
-          [
-              191001 221304 251607
-              201102 231405 261708
-              211203 241506 271809
-          ]
+        PhaseBases.inner(coef, b) ==
+        [
+            191001 221304 251607
+            201102 231405 261708
+            211203 241506 271809
+        ]
 end
 
 @testset "aperture" begin
@@ -289,7 +290,7 @@ end
 
     # Test different elements have disjoint support
     all_elems = collect(elements(pb))
-    for i in 1:length(pb), j in (i+1):length(pb)
+    for i in 1:length(pb), j in (i + 1):length(pb)
         @test sum(all_elems[i] .* all_elems[j]) == 0
     end
 end
@@ -402,7 +403,7 @@ end
     composed = compose(pb, coef)
     @test sum(.!iszero.(composed)) == n_pixels
 
-    # Test decompose performance (should be O(n_pixels)) 
+    # Test decompose performance (should be O(n_pixels))
     decomposed = decompose(composed, pb)
     @test length(decomposed) == n_pixels
     @test decomposed ≈ coef atol = 1e-14
@@ -427,7 +428,7 @@ end
     # Dense constructor: consecutive indices from j_first(ordering)
     ph = SymbolicZernikePhase([0.1, -0.2, 0.0, 0.5, 0.3], Fringe)
     @test ph.indices == [1, 2, 3, 4, 5]
-    @test ph.coef    == [0.1, -0.2, 0.0, 0.5, 0.3]
+    @test ph.coef == [0.1, -0.2, 0.0, 0.5, 0.3]
 
     # OSA ordering starts at 0
     ph_osa = SymbolicZernikePhase([0.1, -0.2, 0.5], OSA)
@@ -467,32 +468,32 @@ end
 
     # Round-trip: j → nm → j should be identity
     @test all(nm_to_fringe_j.(fringe_j_to_nm.(1:20)) .== 1:20)
-    @test all(nm_to_noll_j.(noll_j_to_nm.(1:20))     .== 1:20)
-    @test all(nm_to_osa_j.(osa_j_to_nm.(0:20))        .== 0:20)
+    @test all(nm_to_noll_j.(noll_j_to_nm.(1:20)) .== 1:20)
+    @test all(nm_to_osa_j.(osa_j_to_nm.(0:20)) .== 0:20)
 end
 
 @testset "SymbolicZernikePhase — reorder" begin
     # Defocus: Fringe 4 == Noll 4 == OSA 12 — all the same (n=2,m=0) term
     ph_fringe = SymbolicZernikePhase([4], [1.5], Fringe)
-    ph_noll   = reorder(ph_fringe, Noll)
-    ph_osa    = reorder(ph_fringe, OSA)
+    ph_noll = reorder(ph_fringe, Noll)
+    ph_osa = reorder(ph_fringe, OSA)
 
     @test to_nm(ph_noll)[1] == (n=2, m=0)
-    @test ph_noll.indices   == [nm_to_noll_j(n=2, m=0)]
-    @test ph_noll.coef      == [1.5]   # coefficients unchanged
+    @test ph_noll.indices == [nm_to_noll_j(; n=2, m=0)]
+    @test ph_noll.coef == [1.5]   # coefficients unchanged
 
-    @test ph_osa.indices == [nm_to_osa_j(n=2, m=0)]
-    @test ph_osa.coef    == [1.5]
+    @test ph_osa.indices == [nm_to_osa_j(; n=2, m=0)]
+    @test ph_osa.coef == [1.5]
 
     # Reordering to the same convention returns a copy
     ph_same = reorder(ph_fringe, Fringe)
     @test ph_same.indices == ph_fringe.indices
-    @test ph_same.coef    == ph_fringe.coef
+    @test ph_same.coef == ph_fringe.coef
     @test ph_same !== ph_fringe   # it's a copy, not the same object
 
     # Multi-term round-trip Fringe → Noll → Fringe
     ph_multi = SymbolicZernikePhase([1, 4, 9, 16], [0.1, 1.5, 0.3, -0.2], Fringe)
-    ph_back  = reorder(reorder(ph_multi, Noll), Fringe)
+    ph_back = reorder(reorder(ph_multi, Noll), Fringe)
     @test sort(ph_back.indices) == sort(ph_multi.indices)
     ## Coefficients should match after re-sorting by index
     perm1 = sortperm(ph_multi.indices)
@@ -502,7 +503,7 @@ end
 
 @testset "SymbolicZernikePhase — arithmetic" begin
     # Negation
-    ph  = SymbolicZernikePhase([4], [1.5], Noll)
+    ph = SymbolicZernikePhase([4], [1.5], Noll)
     neg = -ph
     @test neg.coef == [-1.5]
     @test neg.indices == ph.indices
@@ -530,13 +531,13 @@ end
     d = SymbolicZernikePhase([4], [0.3], Noll)
     e = a + d
     @test e.indices == [4]
-    @test e.coef    ≈ [1.3]
+    @test e.coef ≈ [1.3]
 
     # Addition — different orderings (ph2 is reordered transparently)
     # Fringe 4 and Noll 4 are both (n=2,m=0) defocus
     f_fringe = SymbolicZernikePhase([4], [1.0], Fringe)
-    f_noll   = SymbolicZernikePhase([4], [0.5], Noll)
-    f_sum    = f_fringe + f_noll   # result in Fringe ordering
+    f_noll = SymbolicZernikePhase([4], [0.5], Noll)
+    f_sum = f_fringe + f_noll   # result in Fringe ordering
     @test f_sum.ordering isa FringeOrdering
     nm_sum = to_nm(f_sum)
     @test all(nm -> nm == (n=2, m=0), nm_sum)   # both terms are defocus
@@ -545,7 +546,7 @@ end
     # Subtraction
     g = a - d
     @test g.indices == [4]
-    @test g.coef    ≈ [0.7]
+    @test g.coef ≈ [0.7]
 
     # Mismatched normalization is an error
     ph_rms = SymbolicZernikePhase([4], [1.0], Noll, RMSNorm)
@@ -556,11 +557,12 @@ end
     z = ZernikeBW(7, 4)
 
     # Single defocus term: Fringe 4 = OSA index 12 = basis array element 13
-    defocus_osa_idx = nm_to_osa_j(n=2, m=0) + 1   # 1-based
+    defocus_osa_idx = nm_to_osa_j(; n=2, m=0) + 1   # 1-based
 
     ph = SymbolicZernikePhase([4], [1.0], Fringe)
     arr = collect(ph, z)
-    ref = zeros(length(z)); ref[defocus_osa_idx] = 1.0
+    ref = zeros(length(z))
+    ref[defocus_osa_idx] = 1.0
     expected = compose(z, ref)
     @test arr ≈ expected
 
@@ -576,7 +578,7 @@ end
 
     # Dense Fringe phase: first 5 coefficients
     coef5 = [0.1, -0.2, 0.0, 0.5, 0.3]
-    ph5   = SymbolicZernikePhase(coef5, Fringe)
+    ph5 = SymbolicZernikePhase(coef5, Fringe)
     # OSA positions for Fringe 1..5
     osa_pos = [nm_to_osa_j(fringe_j_to_nm(j)) + 1 for j in 1:5]
     ref_coef = zeros(length(z))

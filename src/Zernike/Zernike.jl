@@ -211,7 +211,7 @@ function makezerniketable(dom::CartesianDomain2D, maxorder::Integer, scale=1)
     x = dom.xrange / scale
     y = dom.yrange / scale
     totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
-    ztable = [zernike(xc, yc, maxorder)[:z] for xc in x, yc in y]
+    ztable = [zernike(xc, yc, maxorder)[:z] for yc in y, xc in x]
     zvec = VectorOfArray([zeros(length(y), length(x)) for i in 1:totalznum])
     [zvec[i, :] = ztable[i] for i in eachindex(ztable)]
     return zvec

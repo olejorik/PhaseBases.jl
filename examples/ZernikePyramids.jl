@@ -28,7 +28,7 @@ CairoMakie.activate!(; type="png")
 # We create a moderately sized Zernike basis and a helper function that
 # plots a single polynomial into a subplot cell.
 
-zbas = ZernikeBW(64, 10)  ## 64×64 grid, polynomials up to radial order 10
+zbas = ZernikeBW(128, 10)  ## 128×128 grid, polynomials up to radial order 10
 ap = mask(zbas)            ## NaN outside aperture — clean display
 
 """
@@ -43,7 +43,7 @@ function plot_zernike!(fig, row, col, osa_idx; label="", kw...)
     )
     heatmap!(
         ax,
-        elements(zbas, osa_idx) .* ap;
+        (elements(zbas, osa_idx) .* ap)';  ## transpose to match display orientation
         colormap=reverse(cgrad(:RdBu)),
         colorrange=(-1, 1),
         kw...,
@@ -70,7 +70,6 @@ end
 maxn = 6   ## show orders 0 through 6
 
 fig_bw = Figure(; size=(900, 900))
-Label(fig_bw[0, :], "Born & Wolf / OSA Pyramid  (n = 0 … $maxn)"; fontsize=18, font=:bold)
 
 for n in 0:maxn
     for m in (-n):2:n
@@ -92,6 +91,16 @@ end
 for i in 2:(maxn + 2)
     rowsize!(fig_bw.layout, i, Fixed(cell_px))
 end
+Label(fig_bw[1, :], "Born & Wolf / OSA Pyramid  (n = 0 … $maxn)"; fontsize=18, font=:bold)
+Colorbar(
+    fig_bw[maxn + 3, :];
+    colormap=reverse(cgrad(:RdBu)),
+    limits=(-1, 1),
+    vertical=false,
+    width=Relative(0.5),
+    height=Relative(0.05),
+    label="Zernike Value",
+)
 resize_to_layout!(fig_bw)
 
 fig_bw
@@ -120,7 +129,7 @@ max_n_fringe = maximum(nm.n for nm in fringe_nm)
 max_m_fringe = maximum(abs(nm.m) for nm in fringe_nm)
 
 fig_fr = Figure(; size=(900, 1000))
-Label(fig_fr[0, :], "Fringe Diamond  (first $n_fringe terms)"; fontsize=18, font=:bold)
+
 
 for j in 1:n_fringe
     nm = fringe_nm[j]
@@ -135,14 +144,26 @@ for j in 1:n_fringe
     plot_zernike!(fig_fr, grow, gcol, arr_idx; label="F$j ($n,$m)")
 end
 
+Label(fig_fr[1, :], "Fringe Diamond  (first $n_fringe terms)"; fontsize=18, font=:bold)
+Colorbar(
+    fig_fr[max_n_fringe + 3, :];
+    colormap=reverse(cgrad(:RdBu)),
+    limits=(-1, 1),
+    vertical=false,
+    width=Relative(0.5),
+    height=Relative(0.05),
+    label="Zernike Value",
+)
+
 ## Force equal cell sizes so isolated extremal columns (e.g. (5,-5)) are not oversized
 cell_px_fr = 65
 for i in 1:(2max_m_fringe + 1)
     colsize!(fig_fr.layout, i, Fixed(cell_px_fr))
 end
-for i in 2:(max_n_fringe + 2)
+for i in 2:(max_n_fringe + 3)
     rowsize!(fig_fr.layout, i, Fixed(cell_px_fr))
 end
+
 
 resize_to_layout!(fig_fr)
 fig_fr

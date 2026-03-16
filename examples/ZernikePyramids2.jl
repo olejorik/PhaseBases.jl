@@ -24,15 +24,15 @@ CairoMakie.activate!(; type="png")
 
 # ## Setup
 
-zbas = ZernikeBW(64, 10)  ## 64×64 grid, polynomials up to radial order 10
+zbas = ZernikeBW(128, 10)  ## 128×128 grid, polynomials up to radial order 10
 ap = mask(zbas)            ## NaN outside aperture
 
 ## Cell size, step, and padding (pixels).
 ## CELL  — width/height of each individual heatmap subplot.
 ## STEP  — centre-to-centre distance between adjacent cells (must be ≥ CELL).
 ##         gap between cells = STEP - CELL.
-const CELL  = 64
-const STEP  = 76   ## increase for more spacing, decrease toward CELL for tighter layout
+const CELL = 64
+const STEP = 76   ## increase for more spacing, decrease toward CELL for tighter layout
 const PAD_H = 50   ## horizontal padding on each side
 const PAD_T = 60   ## space reserved for the title at the top
 const PAD_B = 20   ## bottom padding
@@ -40,14 +40,20 @@ const PAD_B = 20   ## bottom padding
 ## Place a single Zernike heatmap centred at pixel (cx, cy) in fig.
 function place_zernike!(fig, cx, cy, osa_arr_idx; label="")
     half = CELL / 2
-    ax = Axis(fig;
-        bbox       = BBox(cx - half, cx + half, cy - half, cy + half),
-        aspect     = DataAspect(),
-        title      = label,
-        titlesize  = 9,
-        titlefont  = :regular,
+    ax = Axis(
+        fig;
+        bbox=BBox(cx - half, cx + half, cy - half, cy + half),
+        aspect=DataAspect(),
+        title=label,
+        titlesize=9,
+        titlefont=:regular,
     )
-    heatmap!(ax, elements(zbas, osa_arr_idx) .* ap; colormap=:RdBu)
+    heatmap!(
+        ax,
+        (elements(zbas, osa_arr_idx) .* ap)';
+        colormap=reverse(cgrad(:RdBu)),
+        colorrange=(-1, 1),
+    )
     hidedecorations!(ax)
     hidespines!(ax)
     return ax
@@ -64,32 +70,44 @@ end
 maxn = 6   ## show radial orders 0 … 6
 
 ## Figure dimensions
-bw_width  = (2maxn + 1) * STEP + 2PAD_H
-bw_height = (maxn + 1)  * STEP + PAD_T + PAD_B
+bw_width = ((2maxn + 1) * STEP + 2PAD_H) / 2
+bw_height = (maxn + 2) * STEP + PAD_T + PAD_B
 
 ## Origin: horizontal centre; vertical top (below title padding)
-bw_ox    = bw_width / 2
+bw_ox = bw_width / 2
 bw_top_y = bw_height - PAD_T - STEP / 2
 
 fig_bw = Figure(; size=(bw_width, bw_height))
 
 ## Title using absolute scene coordinates
-text!(fig_bw.scene,
+text!(
+    fig_bw.scene,
     "Born & Wolf / OSA Pyramid  (n = 0 … $maxn)";
-    position  = (bw_width / 2, bw_height - PAD_T / 2),
-    align     = (:center, :center),
-    fontsize  = 18,
-    font      = :bold,
+    position=(bw_width / 2, bw_height - PAD_T / 2),
+    align=(:center, :center),
+    fontsize=18,
+    font=:bold,
 )
 
 for n in 0:maxn
     for m in (-n):2:n
-        arr_idx = nm_to_osa_j(n=n, m=m) + 1   ## 1-based position in zbas
-        cx = bw_ox    + m * (STEP / 2)
+        arr_idx = nm_to_osa_j(; n=n, m=m) + 1   ## 1-based position in zbas
+        cx = bw_ox + m * (STEP / 2)
         cy = bw_top_y - n * STEP
         place_zernike!(fig_bw, cx, cy, arr_idx; label="($n,$m)")
     end
 end
+## Add colorbar using absolute coordinates (relative positioning doesn't work with BBox)
+Colorbar(
+    fig_bw[2, :];
+    colormap=reverse(cgrad(:RdBu)),
+    limits=(-1, 1),
+    # position = (bw_width / 2, PAD_B / 2),  ## centered in bottom padding
+    width=bw_width * 0.5,
+    height=PAD_B * 0.5,
+    label="Zernike Value",
+    vertical=false,
+)
 
 fig_bw
 
@@ -106,35 +124,46 @@ fig_bw
 
 n_fringe = 36  ## number of Fringe terms to display
 
-fringe_nm  = [fringe_j_to_nm(j) for j in 1:n_fringe]
-max_n_fr   = maximum(nm.n for nm in fringe_nm)    ## 10
-max_abs_m  = maximum(abs(nm.m) for nm in fringe_nm)  ## 5
+fringe_nm = [fringe_j_to_nm(j) for j in 1:n_fringe]
+max_n_fr = maximum(nm.n for nm in fringe_nm)    ## 10
+max_abs_m = maximum(abs(nm.m) for nm in fringe_nm)  ## 5
 
 ## Figure dimensions
-fr_width  = (2max_abs_m + 1) * STEP + 2PAD_H
-fr_height = (max_n_fr + 1)   * STEP + PAD_T + PAD_B
+fr_width = ((2max_abs_m + 1) * STEP + 2PAD_H) / 2
+fr_height = (max_n_fr + 2) * STEP + PAD_T + PAD_B
 
-fr_ox    = fr_width / 2
+fr_ox = fr_width / 2
 fr_top_y = fr_height - PAD_T - STEP / 2
 
 fig_fr = Figure(; size=(fr_width, fr_height))
 
-text!(fig_fr.scene,
+text!(
+    fig_fr.scene,
     "Fringe Diamond  (first $n_fringe terms)";
-    position  = (fr_width / 2, fr_height - PAD_T / 2),
-    align     = (:center, :center),
-    fontsize  = 18,
-    font      = :bold,
+    position=(fr_width / 2, fr_height - PAD_T / 2),
+    align=(:center, :center),
+    fontsize=18,
+    font=:bold,
 )
 
 for j in 1:n_fringe
-    n, m   = fringe_nm[j].n, fringe_nm[j].m
-    arr_idx = nm_to_osa_j(n=n, m=m) + 1
+    n, m = fringe_nm[j].n, fringe_nm[j].m
+    arr_idx = nm_to_osa_j(; n=n, m=m) + 1
     arr_idx > length(zbas) && continue  ## guard (shouldn't trigger with order 10)
-    cx = fr_ox    + m * (STEP / 2)
+    cx = fr_ox + m * (STEP / 2)
     cy = fr_top_y - n * STEP
     place_zernike!(fig_fr, cx, cy, arr_idx; label="F$j ($n,$m)")
 end
+
+Colorbar(
+    fig_fr[2, :];
+    colormap=reverse(cgrad(:RdBu)),
+    limits=(-1, 1),
+    width=fr_width * 0.5,
+    height=PAD_B * 0.5,
+    label="Zernike Value",
+    vertical=false,
+)
 
 fig_fr
 
