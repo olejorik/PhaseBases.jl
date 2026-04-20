@@ -253,15 +253,16 @@ function allinners!(coeffs::AbstractVector, a, b::AbstractBasis)
             "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
         ),
     )
+    norms_b = norms(b)
 
     if hasproperty(b, :elements)
         if hasproperty(b, :indexes)
             @inbounds for (i, f) in enumerate(b.elements)
-                coeffs[i] = inner_indexed(a, f, b.indexes)
+                coeffs[i] = inner_indexed(a, f, b.indexes) / norms_b[i]^2
             end
         else #assume the indexes is the full array
             @inbounds for (i, f) in enumerate(b.elements)
-                coeffs[i] = inner_masked(a, f, aperture(b))
+                coeffs[i] = inner_masked(a, f, aperture(b)) / norms_b[i]^2
             end
         end
     else
@@ -276,9 +277,10 @@ function allinners!(coeffs::AbstractVector, a, b::OrthonormalBasis)
             "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
         ),
     )
+    basis_norms = norms(b)
 
     @inbounds for (i, f) in enumerate(elements(b))
-        coeffs[i] = inner_masked(a, f, aperture(b))
+        coeffs[i] = inner_masked(a, f, aperture(b)) / basis_norms[i]^2
     end
     return coeffs
 end
@@ -290,8 +292,9 @@ function allinners!(coeffs::AbstractVector, a, b::OrthogonalBasis)
         ),
     )
 
+    basis_norms = norms(b)
     @inbounds for (i, f) in enumerate(elements(b))
-        coeffs[i] = inner_masked(a, f, aperture(b))
+        coeffs[i] = inner_masked(a, f, aperture(b)) / basis_norms[i]^2
     end
     return coeffs
 end
