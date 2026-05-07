@@ -17,6 +17,7 @@ export Basis,
     decompose_and_complement,
     ShiftedBasis
 export zernike
+export rot90ccw, rot90cw, rot180, flipx, flipy
 export SymbolicZernikePhase,
     ZernikeOrdering, ZernikeNormalization,
     FringeOrdering, NollOrdering, OSAOrdering, MizerOrdering,

@@ -183,15 +183,32 @@ struct ZernikeBW <: AbstractBasis
     end
 end
 
+"""
+    rot90ccw((x, y)) -> (-y, x)
+    rot90cw((x, y))  -> (y, -x)
+    rot180((x, y))   -> (-x, -y)
+    flipx((x, y))    -> (-x, y)
+    flipy((x, y))    -> (x, -y)
+
+Coordinate maps for use with the `coordmap` keyword of `ZernikeBW`.
+Rotate or reflect the coordinate system in which Zernike polynomials are evaluated,
+so that the resulting basis is aligned with the user's array axes.
+"""
+rot90ccw((x, y)) = (-y,  x)
+rot90cw((x, y))  = ( y, -x)
+rot180((x, y))   = (-x, -y)
+flipx((x, y))    = (-x,  y)
+flipy((x, y))    = ( x, -y)
+
 function ZernikeBW(gridsize::Integer, maxorder::Integer)
     return ZernikeBW(makezerniketable(gridsize, maxorder), makeaperture(gridsize)...)
 end
-function ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer; fftshifted=false)
+function ZernikeBW(dom::CartesianDomain2D, d::Real, maxorder::Integer; fftshifted=false, coordmap=identity)
     if !fftshifted
-        return ZernikeBW(makezerniketable(dom, maxorder, d / 2), aperture(dom, d)...)
+        return ZernikeBW(makezerniketable(dom, maxorder, d / 2; coordmap), aperture(dom, d)...)
     else
         return ZernikeBW(
-            VectorOfArray([ifftshift(e) for e in makezerniketable(dom, maxorder, d / 2)]),
+            VectorOfArray([ifftshift(e) for e in makezerniketable(dom, maxorder, d / 2; coordmap)]),
             ifftshift.(aperture(dom, d))...,
         )
     end
@@ -207,11 +224,11 @@ end
 #     return zvec
 # end
 
-function makezerniketable(dom::CartesianDomain2D, maxorder::Integer, scale=1)
+function makezerniketable(dom::CartesianDomain2D, maxorder::Integer, scale=1; coordmap=identity)
     x = dom.xrange / scale
     y = dom.yrange / scale
     totalznum = Int((maxorder + 2) * (maxorder + 1) / 2)
-    ztable = [zernike(xc, yc, maxorder)[:z] for yc in y, xc in x]
+    ztable = [begin u, v = coordmap((xc, yc)); zernike(u, v, maxorder)[:z] end for yc in y, xc in x]
     zvec = VectorOfArray([zeros(length(y), length(x)) for i in 1:totalznum])
     [zvec[i, :] = ztable[i] for i in eachindex(ztable)]
     return zvec
