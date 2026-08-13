@@ -26,7 +26,7 @@ simulations.
 
 ## Array axis convention
 
-Currently, all 2D arrays produced by this package (Zernike mode images, apertures, phase maps) follow the **row = y, column = x** convention:
+Currently, all 2D arrays produced by this package (Zernike mode images, apertures, phase maps) follow the **row = y, column = x** convention, that is if array `A` represents sampled values of a function `f(x,y)`, then:
 
 ```
 A[j, i] = f(x[i], y[j])
@@ -35,10 +35,10 @@ A[j, i] = f(x[i], y[j])
 - `i` indexes **x** (`xrange[i]`), the horizontal / column direction — second array index.
 - `j` indexes **y** (`yrange[j]`), the vertical / row direction — first array index.
 
-This matches how Julia (and `Images.jl`) loads and displays images: a sensor image that is `W` pixels wide and `H` pixels tall is a `H × W` matrix, with `img[row, col]` addressing pixel at vertical position `row` and horizontal position `col`. The REPL display is therefore spatially correct — what you see printed is what you get in the optical plane.
+This matches how Julia (_e.g._ [`ImagesIO.jl`](https://github.com/JuliaIO/ImageIO.jl ) loads and displays images: a sensor image that is `W` pixels wide and `H` pixels tall is a `H × W` matrix, with `img[row, col]` addressing pixel at vertical position `row` and horizontal position `col`. The REPL display is therefore spatially correct — what you see printed is what you get in the optical plane.
 
 
-To display the calculated Zernike polynomials with Makie's `heatmap` function in correct orientation, the arrays should be transposed
+To display the calculated Zernike polynomials with Makie's `heatmap` function in correct orientation, the arrays should be rotated clockwise.
 
 ## Related packages
 

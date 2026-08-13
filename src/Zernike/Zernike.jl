@@ -154,6 +154,10 @@ Contains Zernike basis (in Born&Wolf norming) with the aperture, plotting mask, 
 and
     `ZernikeBW(gridsize::Integer, maxorder::Integer)`
 
+Builds the full *triangular* set of modes up to `maxorder` (all `(n,m)` with
+`n ≤ maxorder`). If you only need a specific subset of modes (e.g. a sparse set of
+Fringe indices, or the first N terms in some ordering), see [`zernike_basis`](@ref)
+instead — it avoids computing the dual basis over unused modes.
 """
 struct ZernikeBW <: AbstractBasis
     elements::VectorOfArray
@@ -523,6 +527,7 @@ export osa_j_to_nm,
     zerniketicks
 
 include("symbolic_zernike.jl")
+include("zernike_basis.jl")
 
 ## make basis callable for convenience
 # This is pixelated, the modal phase is better

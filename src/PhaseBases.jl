@@ -15,7 +15,8 @@ export Basis,
     collect!,
     project,
     decompose_and_complement,
-    ShiftedBasis
+    ShiftedBasis,
+    zernike_basis
 export zernike
 export rot90ccw, rot90cw, rot180, flipx, flipy
 export SymbolicZernikePhase,

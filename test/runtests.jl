@@ -589,3 +589,84 @@ end
     ph_high = SymbolicZernikePhase([37], [1.0], Fringe)   # Fringe 37 = (n=6,m=6), needs order 6 but basis is order 4
     @test_throws ArgumentError collect(ph_high, z)
 end
+
+@testset "zernike_basis — explicit indices" begin
+    dom = PhaseBases.CartesianDomain2D(-1:0.1:1, -1:0.1:1)
+
+    # Sparse Fringe indices: only 3 modes requested
+    bas = zernike_basis([1, 4, 9], Fringe, dom, 1.8)
+    @test length(bas) == 3
+    @test bas isa Basis
+
+    # Elements follow the order of `indices`, matching a full ZernikeBW at the same grid
+    zref = ZernikeBW(dom, 1.8, 4)
+    osa_pos = [nm_to_osa_j(fringe_j_to_nm(j)) + 1 for j in [1, 4, 9]]
+    for (i, pos) in enumerate(osa_pos)
+        @test elements(bas, i) == elements(zref, pos)
+    end
+
+    # Round-trip compose/decompose
+    coef = randn(3)
+    arr = compose(bas, coef)
+    @test decompose(arr, bas) ≈ coef
+
+    # Duplicate indices are rejected
+    @test_throws ArgumentError zernike_basis([1, 1], Fringe, dom, 1.8)
+
+    # RMS normalization is not yet supported
+    @test_throws ErrorException zernike_basis([1], Fringe, dom, 1.8; normalization=RMSNorm)
+end
+
+@testset "zernike_basis — dense (first nterms)" begin
+    dom = PhaseBases.CartesianDomain2D(-1:0.1:1, -1:0.1:1)
+
+    bas9 = zernike_basis(9, Fringe, dom, 1.8)   # first Fringe ring
+    @test length(bas9) == 9
+
+    bas_noll = zernike_basis(5, Noll, dom, 1.8)
+    @test length(bas_noll) == 5
+
+    ## Dense Fringe basis matches explicit 1:9 indices
+    bas_explicit = zernike_basis(1:9, Fringe, dom, 1.8)
+    for i in 1:9
+        @test elements(bas9, i) == elements(bas_explicit, i)
+    end
+end
+
+@testset "zernike_basis — from SymbolicZernikePhase" begin
+    dom = PhaseBases.CartesianDomain2D(-1:0.1:1, -1:0.1:1)
+
+    ph = SymbolicZernikePhase([1, 4, 9], [0.1, 1.5, -0.3], Fringe)
+    bas = zernike_basis(ph, dom, 1.8)
+    @test length(bas) == 3
+
+    mp = ModalPhase(ph, dom, 1.8)
+    @test mp isa ModalPhase
+    @test length(mp.coef) == 3
+    @test mp.coef == ph.coef
+    @test collect(mp) ≈ compose(bas, ph.coef)
+
+    ## Exact match: no zero-padding, unlike ModalPhase(ph, basis::ZernikeBW)
+    zref = ZernikeBW(dom, 1.8, 4)
+    mp_padded = ModalPhase(ph, zref)
+    @test length(mp_padded.coef) == length(zref)
+    @test length(mp.coef) < length(mp_padded.coef)
+    @test collect(mp) ≈ collect(mp_padded)
+end
+
+@testset "zernike_basis — fftshifted matches ZernikeBW" begin
+    using FFTW: ifftshift
+
+    dom = PhaseBases.CartesianDomain2D(-1:0.1:1, -1:0.1:1)
+    order = 4
+
+    bas = zernike_basis(1:9, Fringe, dom, 1.8; fftshifted=true)
+    zref = ZernikeBW(dom, 1.8, order; fftshifted=true)
+    osa_pos = [nm_to_osa_j(fringe_j_to_nm(j)) + 1 for j in 1:9]
+
+    for (i, pos) in enumerate(osa_pos)
+        @test elements(bas, i) == elements(zref, pos)
+    end
+    @test aperture(bas) == aperture(zref)
+end
+
