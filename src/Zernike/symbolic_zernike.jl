@@ -272,7 +272,7 @@ end
 # -------------------------------------------------------------------------------
 # Materialization
 # -------------------------------------------------------------------------------
-
+#TODO: fix the three methods below, this should not work if the basis is different from the basis of the phase
 """
     collect(ph::SymbolicZernikePhase, basis::ZernikeBW) -> Array
 
