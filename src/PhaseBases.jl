@@ -14,7 +14,10 @@ export Basis,
     decompose!,
     collect!,
     project,
+    project!,
     decompose_and_complement,
+    residual,
+    residual!,
     ShiftedBasis,
     zernike_basis
 export zernike

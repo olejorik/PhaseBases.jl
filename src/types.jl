@@ -22,7 +22,10 @@ export elements,
     coefficients,
     coefficients!,
     orthogonalize,
-    OrthoBasis
+    OrthoBasis,
+    residual,
+    project!,
+    residual!
 
 
 """
@@ -242,6 +245,37 @@ project(a, b::AbstractBasis) = compose(b, decompose(a, b))
 
 decompose_and_complement(a, b::AbstractBasis) = (decompose(a, b), a .- project(a, b))
 
+"""
+    residual(a, b::AbstractBasis)
+
+Component of `a` orthogonal to (not explained by) basis `b`, i.e. `a - project(a, b)`.
+"""
+residual(a, b::AbstractBasis) = a .- project(a, b)
+
+"""
+    project!(target, coeffs, a, b::AbstractBasis)
+
+Non-allocating version of `project`. Writes coefficients of `a` in basis `b` into
+`coeffs`, then writes the resulting projection into `target`.
+"""
+function project!(target, coeffs::AbstractVector, a, b::AbstractBasis)
+    decompose!(coeffs, a, b)
+    compose!(target, b, coeffs)
+    return target
+end
+
+"""
+    residual!(target, coeffs, a, b::AbstractBasis)
+
+Non-allocating version of `residual`. Uses `coeffs` and `target` as scratch buffers,
+leaving `target = a - project(a, b)`.
+"""
+function residual!(target, coeffs::AbstractVector, a, b::AbstractBasis)
+    project!(target, coeffs, a, b)
+    target .= a .- target
+    return target
+end
+
 # These functions are needed for calculation of the derivatives by direction
 
 """
@@ -313,7 +347,7 @@ function comb!(
         throw(ArgumentError("Target array size does not match basis element size"))
     target .= 0
     for i in 1:length(coef)
-        target .+= coef[i] * a[i]
+        target .+= coef[i] .* a[i]   # dot-multiply: fuses into the broadcast, no temporary array
     end
     return target
 end

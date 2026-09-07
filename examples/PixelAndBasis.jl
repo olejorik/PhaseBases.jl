@@ -1,5 +1,5 @@
 using PhaseBases
-import PhaseBases: decompose, compose, inner
+import PhaseBases: decompose, compose, inner, project, residual, project!, residual!
 using CairoMakie
 CairoMakie.activate!(; type="png")
 
@@ -73,7 +73,7 @@ true_coef = [0.5, -0.3, 0.8]
 wf_true = compose(gbas, true_coef) .+ 0.02 .* randn(N, N) .* ap
 
 fitted = decompose(wf_true, gbas)
-residual = wf_true .- compose(gbas, fitted)
+wf_res = wf_true .- compose(gbas, fitted)
 
 fig2 = Figure(; size=(650, 220))
 ax1 = Axis(fig2[1, 1]; title="input", aspect=DataAspect())
@@ -81,7 +81,7 @@ ax2 = Axis(fig2[1, 2]; title="fit", aspect=DataAspect())
 ax3 = Axis(fig2[1, 3]; title="residual", aspect=DataAspect())
 heatmap!(ax1, wf_true .* aperture(gbas); colormap=:RdBu)
 heatmap!(ax2, compose(gbas, fitted) .* aperture(gbas); colormap=:RdBu)
-heatmap!(ax3, residual .* aperture(gbas); colormap=:RdBu)
+heatmap!(ax3, wf_res .* aperture(gbas); colormap=:RdBu)
 fig2
 
 # Fitted coefficients vs truth:
@@ -109,7 +109,72 @@ round.(gram(obas); digits=3)             ## ≈ identity
 ofitted = decompose(wf_true, obas)
 maximum(abs, (compose(obas, ofitted) .- compose(gbas, fitted)) .* aperture(gbas))   ## ≈ 0
 
-# ## 4 — When to Use Which
+# ## 4 — Projection and Residual
+#
+# `project(a, b)` gives the part of `a` explained by basis `b`;
+# `residual(a, b)` gives what's left over (`a .- project(a, b)`).
+#
+# To make the residual non-trivial, build a *sub*-basis `gbas_sub` that only
+# spans the first two of the three Gaussians, then project a vector `g` that
+# lives in the full 3-Gaussian span onto it. The third Gaussian's contribution
+# cannot be explained by `gbas_sub`, so it must show up in the residual.
+
+gbas_sub = Basis(funcs[1:2], ap_idx)   ## only the first two Gaussians
+
+g = compose(gbas, [0.5, -0.3, 0.8])    ## lives in the full 3-Gaussian span
+
+g_proj = project(g, gbas_sub)
+g_res = residual(g, gbas_sub)
+
+maximum(abs, (g .- (g_proj .+ g_res)) .* ap)   ## ≈ 0, project + residual = g
+
+# `g_res` is exactly orthogonal to `gbas_sub`, i.e. to *both* of its basis
+# functions `f1`, `f2` — this is what `project`/`residual` guarantee:
+
+[inner(g_res, f, ap) for f in elements(gbas_sub)]   ## ≈ [0, 0]
+
+# Yet the heatmap of `g_res` (below) still visibly shows blobs near the `f1`,
+# `f2` centers, not just the shape of the omitted `f3`. This is not a
+# contradiction: orthogonality is an *inner-product* (integral) condition,
+# not a pointwise one. Since `f1`, `f2`, `f3` overlap and are not mutually
+# orthogonal, `f3` itself is not orthogonal to `f1`, `f2` — so removing the
+# best `f1`/`f2`-fit of `g` necessarily also removes part of the shape that
+# visually looks like `f1`/`f2` from within `f3`'s own footprint, and leaves
+# the rest as compensation so the total residual integrates to zero against
+# `f1`, `f2`. The residual is orthogonal to `gbas_sub` as a whole, not free
+# of any pointwise resemblance to its basis functions.
+
+fig3 = Figure(; size=(650, 220))
+ax1 = Axis(fig3[1, 1]; title="g (3 Gaussians)", aspect=DataAspect())
+ax2 = Axis(fig3[1, 2]; title="project(g, gbas_sub)", aspect=DataAspect())
+ax3 = Axis(fig3[1, 3]; title="residual(g, gbas_sub)", aspect=DataAspect())
+heatmap!(ax1, g .* ap; colormap=:RdBu)
+heatmap!(ax2, g_proj .* ap; colormap=:RdBu)
+heatmap!(ax3, g_res .* ap; colormap=:RdBu)
+fig3
+
+# The residual still shows the shape of the third (omitted) Gaussian bump,
+# since `gbas_sub` has no way to represent it.
+
+# ### Non-allocating fits: `project!` / `residual!`
+#
+# When the basis is fixed and only the target array changes — e.g. inside an
+# iterative fitting loop — `project!`/`residual!` avoid allocating a new
+# coefficient vector and output array on every call. Preallocate the buffers
+# once, outside the loop:
+
+coeffs_buf = Vector{Float64}(undef, length(gbas_sub))
+target_buf = similar(g)
+
+residual!(target_buf, coeffs_buf, g, gbas_sub)
+target_buf ≈ g_res
+
+## measured inside a function to avoid global-scope dispatch overhead in @allocated
+check_allocs(target, coeffs, a, b) = @allocated residual!(target, coeffs, a, b)
+check_allocs(target_buf, coeffs_buf, g, gbas_sub)   ## warm up (compilation)
+check_allocs(target_buf, coeffs_buf, g, gbas_sub)   ## 0
+
+# ## 5 — When to Use Which
 #
 # | Basis | Use case |
 # |:---|:---|
@@ -130,5 +195,8 @@ maximum(abs, (compose(obas, ofitted) .- compose(gbas, fitted)) .* aperture(gbas)
 # | `compose(b, coef)` | Coefficients → array |
 # | `decompose(arr, b)` | Array → coefficients |
 # | `orthogonalize(b)` | Build an orthonormal basis spanning the same functions |
+# | `project(a, b)` | Part of `a` explained by basis `b` |
+# | `residual(a, b)` | Part of `a` left over after `project` |
+# | `project!`, `residual!` | Non-allocating versions (preallocated buffers) |
 # | `elements(b)`, `norms(b)` | Inspect basis functions |
 # | `mask(b)`, `aperture(b)` | Aperture metadata |
