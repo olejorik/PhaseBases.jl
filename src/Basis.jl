@@ -30,6 +30,8 @@ end
 Basis(elements::Vector, indexes; kwargs...) =
     Basis(VectorOfArray(elements), indexes; kwargs...)
 
+basislayoutstyle(::Basis) = Indexed()
+
 # We also introduce a basis with shifted origin
 #= struct ShiftedBasis <: AbstractBasis
     elements::VectorOfArray

@@ -25,7 +25,12 @@ export elements,
     OrthoBasis,
     residual,
     project!,
-    residual!
+    residual!,
+    BasisLayoutStyle,
+    Indexed,
+    Masked,
+    Unsupported,
+    basislayoutstyle
 
 
 """
@@ -41,6 +46,26 @@ abstract type AbstractBasis end
 abstract type OrthogonalBasis <: AbstractBasis end
 
 abstract type OrthonormalBasis <: OrthogonalBasis end
+
+"""
+    BasisLayoutStyle
+
+Trait describing how a basis exposes its `elements`/`dualelements`, used to dispatch
+`decompose`/`decompose!`/`allinners!` without runtime `hasproperty` checks (which
+prevent the compiler from inferring concrete field types and cause allocations).
+
+- `Indexed`: elements are defined over a restricted set of `indexes`.
+- `Masked`: elements are defined over the full array (use `aperture(b)`).
+- `Unsupported`: the requested elements (e.g. `dualelements`) are not available.
+
+New basis types should add a method, e.g. `basislayoutstyle(::MyBasis) = Indexed()`.
+"""
+abstract type BasisLayoutStyle end
+struct Indexed <: BasisLayoutStyle end
+struct Masked <: BasisLayoutStyle end
+struct Unsupported <: BasisLayoutStyle end
+
+basislayoutstyle(::AbstractBasis) = Unsupported()
 
 """
     `elements(b::Basis [, ind])`
@@ -166,17 +191,15 @@ compose!(target, b::AbstractBasis, ind::AbstractVector, coef::AbstractVector) = 
 
 Calculate coefficients of `a` in basis `b`.
 """
-function decompose(a, b::AbstractBasis)
-    if hasproperty(b, :dualelements)
-        if hasproperty(b, :indexes)
-            return [inner(a, f, b.indexes) for f in b.dualelements]
-        else #assume the indexes is the full array
-            return [inner(a, f, aperture(b)) for f in b.dualelements]
-        end
-    else
-        return error("There are no decomposition rules of basis $typeof(b)")
-    end
-end
+decompose(a, b::AbstractBasis) = decompose(a, b, basislayoutstyle(b))
+
+decompose(a, b::AbstractBasis, ::Indexed) = [inner(a, f, b.indexes) for f in b.dualelements]
+
+decompose(a, b::AbstractBasis, ::Masked) =
+    [inner(a, f, aperture(b)) for f in b.dualelements]
+
+decompose(a, b::AbstractBasis, ::Unsupported) =
+    error("There are no decomposition rules of basis $(typeof(b))")
 
 function decompose(a, b::OrthonormalBasis)
     return [inner(a, f, aperture(b)) for f in elements(b)]
@@ -197,22 +220,26 @@ function decompose!(coeffs::AbstractVector, a, b::AbstractBasis)
             "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
         ),
     )
+    return decompose!(coeffs, a, b, basislayoutstyle(b))
+end
 
-    if hasproperty(b, :dualelements)
-        if hasproperty(b, :indexes)
-            @inbounds for (i, f) in enumerate(b.dualelements)
-                coeffs[i] = inner_indexed(a, f, b.indexes)
-            end
-        else #assume the indexes is the full array
-            @inbounds for (i, f) in enumerate(b.dualelements)
-                coeffs[i] = inner_masked(a, f, aperture(b))
-            end
-        end
-    else
-        error("There are no decomposition rules of basis $(typeof(b))")
+function decompose!(coeffs::AbstractVector, a, b::AbstractBasis, ::Indexed)
+    @inbounds for (i, f) in enumerate(b.dualelements)
+        coeffs[i] = inner_indexed(a, f, b.indexes)
     end
     return coeffs
 end
+
+function decompose!(coeffs::AbstractVector, a, b::AbstractBasis, ::Masked)
+    ap = aperture(b)
+    @inbounds for (i, f) in enumerate(b.dualelements)
+        coeffs[i] = inner_masked(a, f, ap)
+    end
+    return coeffs
+end
+
+decompose!(coeffs::AbstractVector, a, b::AbstractBasis, ::Unsupported) =
+    error("There are no decomposition rules of basis $(typeof(b))")
 
 function decompose!(coeffs::AbstractVector, a, b::OrthonormalBasis)
     length(coeffs) == length(b) || throw(
@@ -289,23 +316,26 @@ function allinners!(coeffs::AbstractVector, a, b::AbstractBasis)
             "Coefficient vector length $(length(coeffs)) doesn't match basis length $(length(b))",
         ),
     )
-    # norms_b = norms(b)
+    return allinners!(coeffs, a, b, basislayoutstyle(b))
+end
 
-    if hasproperty(b, :elements)
-        if hasproperty(b, :indexes)
-            @inbounds for (i, f) in enumerate(b.elements)
-                coeffs[i] = inner_indexed(a, f, b.indexes)#/ norms_b[i]^2
-            end
-        else #assume the indexes is the full array
-            @inbounds for (i, f) in enumerate(b.elements)
-                coeffs[i] = inner_masked(a, f, aperture(b))# / norms_b[i]^2
-            end
-        end
-    else
-        error("There are no decomposition rules of basis $(typeof(b))")
+function allinners!(coeffs::AbstractVector, a, b::AbstractBasis, ::Indexed)
+    @inbounds for (i, f) in enumerate(b.elements)
+        coeffs[i] = inner_indexed(a, f, b.indexes)
     end
     return coeffs
 end
+
+function allinners!(coeffs::AbstractVector, a, b::AbstractBasis, ::Masked)
+    ap = aperture(b)
+    @inbounds for (i, f) in enumerate(b.elements)
+        coeffs[i] = inner_masked(a, f, ap)
+    end
+    return coeffs
+end
+
+allinners!(coeffs::AbstractVector, a, b::AbstractBasis, ::Unsupported) =
+    error("There are no decomposition rules of basis $(typeof(b))")
 
 function allinners!(coeffs::AbstractVector, a, b::OrthonormalBasis)
     length(coeffs) == length(b) || throw(

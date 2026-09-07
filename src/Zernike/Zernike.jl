@@ -187,6 +187,8 @@ struct ZernikeBW <: AbstractBasis
     end
 end
 
+basislayoutstyle(::ZernikeBW) = Indexed()
+
 """
     rot90ccw((x, y)) -> (-y, x)
     rot90cw((x, y))  -> (y, -x)
