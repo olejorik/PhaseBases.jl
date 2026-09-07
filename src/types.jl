@@ -7,7 +7,7 @@ using SparseArrays
 
 import Base: length, collect, promote_rule, convert, copy
 import Base: -, +, *, show
-import LinearAlgebra: norm, dot
+import LinearAlgebra: norm, dot, svd
 
 export AbstractBasis,
     OrthogonalBasis, OrthonormalBasis, Phase, ModalPhase, ZonalPhase, PixelBasis
@@ -20,7 +20,9 @@ export elements,
     decompose,
     mask,
     coefficients,
-    coefficients!
+    coefficients!,
+    orthogonalize,
+    OrthoBasis
 
 
 """
@@ -547,6 +549,66 @@ innermatrix(b::AbstractBasis) = innermatrix(elements(b), elements(b), aperture(b
 function dualbasis(b::AbstractBasis)
     ata = innermatrix(b)
     return dualel = [inner(elements(b), (inv(ata))[:, i]) for i in 1:length(elements(b))]
+end
+
+"""
+    OrthoBasis{T,N} <: OrthonormalBasis
+
+Orthonormal basis obtained by [`orthogonalize`](@ref)ing an arbitrary `AbstractBasis`.
+Elements are dense arrays of the same size as the source aperture, zero outside `indexes`.
+"""
+struct OrthoBasis{T,N} <: OrthonormalBasis
+    elements::VectorOfArray
+    ap::Array{T,N}
+    indexes::Vector{CartesianIndex{N}}
+end
+elements(b::OrthoBasis) = b.elements
+elements(b::OrthoBasis, ind) = b.elements[ind]
+aperture(b::OrthoBasis) = b.ap
+indexes(b::OrthoBasis) = b.indexes
+norms(b::OrthoBasis) = ones(length(b))
+
+"""
+    orthogonalize(b::AbstractBasis; atol=0, rtol=0) -> OrthoBasis
+
+Build an orthonormal basis of the same linear span as `b`, via SVD of the matrix of
+basis elements restricted to `indexes(b)` (or, if `b` has no `indexes` field, to the
+nonzero entries of `aperture(b)`).
+
+NOTE: `aperture(b)` is assumed to be a binary (0/1) mask. Since `decompose` for an
+`OrthonormalBasis` weights the full array by `aperture(b)` (not just by `indexes`),
+a non-binary aperture would break orthonormality consistency between construction and use.
+
+Directions whose singular value falls below the tolerance
+`tol = max(atol, rtol * F.S[1])` are discarded, so the resulting basis length `r` can be
+smaller than `length(b)` if the original set was (nearly) degenerate.
+"""
+function orthogonalize(b::AbstractBasis; atol=0, rtol=0)
+    idx = hasproperty(b, :indexes) ? indexes(b) : findall(!iszero, aperture(b))
+    els = elements(b)
+    K, Np = length(els), length(idx)
+
+    T = promote_type((eltype(f) for f in els)...)
+    A = zeros(T, Np, K)
+    for (i, f) in enumerate(els)
+        A[:, i] = f[idx]
+    end
+
+    F = svd(A)                      # A = U * Diagonal(S) * Vt
+    tol = max(atol, rtol * F.S[1])
+    r = count(>(tol), F.S)
+    r < K && @warn "basis rank dropped from $K to $r (tol=$tol)"
+
+    ap = aperture(b)
+    newels = [
+        begin
+            arr = zeros(eltype(ap), size(ap))
+            arr[idx] .= F.U[:, k]
+            arr
+        end for k in 1:r
+    ]
+
+    return OrthoBasis(VectorOfArray(newels), ap, idx)
 end
 
 """

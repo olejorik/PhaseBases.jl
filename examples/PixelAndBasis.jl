@@ -1,5 +1,5 @@
 using PhaseBases
-import PhaseBases: decompose, compose
+import PhaseBases: decompose, compose, inner
 using CairoMakie
 CairoMakie.activate!(; type="png")
 
@@ -88,7 +88,28 @@ fig2
 
 hcat(true_coef, fitted)
 
-# ## 3 — When to Use Which
+# ## 3 — Orthogonalizing a Basis
+#
+# The Gaussian bumps above overlap, so `gbas` is *not* orthogonal — its Gram
+# matrix (inner products between elements) has non-zero off-diagonal terms.
+# `orthogonalize` builds an `OrthoBasis` spanning the same functions via SVD.
+
+gram(b) = [inner(f, g, aperture(b)) for f in elements(b), g in elements(b)]
+
+round.(gram(gbas); digits=3)             ## off-diagonal terms present
+
+obas = orthogonalize(gbas)
+length(obas)                             ## still 3: input was full rank
+round.(gram(obas); digits=3)             ## ≈ identity
+
+# The orthonormal basis spans the same subspace, so decomposing the same
+# wavefront and recomposing it gives (up to noise) the same reconstruction,
+# just expressed in different (orthonormal) coordinates:
+
+ofitted = decompose(wf_true, obas)
+maximum(abs, (compose(obas, ofitted) .- compose(gbas, fitted)) .* aperture(gbas))   ## ≈ 0
+
+# ## 4 — When to Use Which
 #
 # | Basis | Use case |
 # |:---|:---|
@@ -108,5 +129,6 @@ hcat(true_coef, fitted)
 # | `ShiftedBasis(funcs, origin, idx)` | Basis with offset origin |
 # | `compose(b, coef)` | Coefficients → array |
 # | `decompose(arr, b)` | Array → coefficients |
+# | `orthogonalize(b)` | Build an orthonormal basis spanning the same functions |
 # | `elements(b)`, `norms(b)` | Inspect basis functions |
 # | `mask(b)`, `aperture(b)` | Aperture metadata |
